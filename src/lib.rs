@@ -1,1 +1,2 @@
-pub mod ctrl;
+pub mod prompt;
+pub mod precmd;
