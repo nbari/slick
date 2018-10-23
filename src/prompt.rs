@@ -23,5 +23,5 @@ pub fn display(sub_matches: &ArgMatches) {
         _ =>9,
     };
 
-    print!("%F{{{}}}%~\n{}%f ", prompt_color, symbol)
+    print!("%F{{{}}}%~{}%f ", prompt_color, symbol)
 }
