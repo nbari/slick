@@ -1,9 +1,9 @@
-extern crate slick;
 extern crate clap;
 
-use slick::prompt;
-use slick::precmd;
 use clap::{App, AppSettings};
+
+mod prompt;
+mod precmd;
 
 fn main() {
     let matches = App::new("slick")
