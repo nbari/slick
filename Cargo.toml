@@ -10,3 +10,6 @@ readme = "README.md"
 keywords = ["prompt", "zsh", "shell", "terminal", "git"]
 categories = ["command-line-utilities", "command-line-interface"]
 license-file = "LICENSE"
+
+[dependencies]
+clap = "2"
