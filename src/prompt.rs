@@ -1,11 +1,12 @@
 use clap::{ArgMatches};
 
 const COMMAND_KEYMAP:&str = "vicmd";
-// const INSERT_SYMBOL:&str = "%F{yellow}>%f";
-const INSERT_SYMBOL:&str = ">";
-const PROMPT_COLOR:i32 = 074;
+const NO_ERROR:&str = "0";
+const PROMPT_COLOR:i32 = 5;
+const PROMPT_ERROR_COLOR:i32 = 196;
 const PROMPT_SYMBOL:&str = "$";
-const NO_ERROR:&str = "O";
+const PROMPT_VICMD_COLOR:i32 = 3;
+const PROMPT_VICMD_SYMBOL:&str = ">";
 
 
 pub fn display(sub_matches: &ArgMatches) {
@@ -13,15 +14,15 @@ pub fn display(sub_matches: &ArgMatches) {
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
 
     let symbol = match keymap {
-        COMMAND_KEYMAP  => INSERT_SYMBOL,
+        COMMAND_KEYMAP  => PROMPT_VICMD_SYMBOL,
         _ => PROMPT_SYMBOL,
     };
 
     let prompt_color = match (symbol, last_return_code) {
-        (PROMPT_SYMBOL, _)  =>  PROMPT_COLOR,
-        (_,NO_ERROR) => 5,
-        _ =>9,
+        (PROMPT_VICMD_SYMBOL, _) => PROMPT_VICMD_COLOR,
+        (_, NO_ERROR)            => PROMPT_COLOR,
+        _                        => PROMPT_ERROR_COLOR,
     };
 
-    print!("%F{{{}}}%~{}%f ", prompt_color, symbol)
+    print!("%F{{{}}}{}%f ", prompt_color, symbol)
 }
