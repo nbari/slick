@@ -4,6 +4,8 @@ use std::time::Duration;
 
 pub fn display(_sub_matches: &ArgMatches) {
     thread::sleep(Duration::from_secs(0));
-    print!("{}", "...")
-//    println!("%F{{{}}}%~%f", 74)
+    let _ = thread::spawn(|| {
+    thread::sleep(Duration::from_secs(2));
+    println!("[{}] ", 3);
+    });
 }
