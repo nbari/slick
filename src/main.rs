@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate git2;
 
 use clap::{App, AppSettings, SubCommand, Arg};
 
@@ -22,6 +23,11 @@ fn main() {
                     .arg(
                         Arg::with_name("keymap")
                         .short("k")
+                        .takes_value(true)
+                    )
+                    .arg(
+                        Arg::with_name("data")
+                        .short("d")
                         .takes_value(true)
                     )
         )

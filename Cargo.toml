@@ -13,3 +13,4 @@ license-file = "LICENSE"
 
 [dependencies]
 clap = "2"
+git2 = "0.7"

@@ -1,13 +1,20 @@
 use clap::{ArgMatches};
-use std::thread;
-use std::time::Duration;
+use git2::{self, Repository, StatusOptions};
+use std::env;
+
+fn repo_status(r: &Repository) -> Option<String> {
+    let mut res = String::new();
+    res.push_str("hello");
+    Some(res)
+}
 
 pub fn display(_sub_matches: &ArgMatches) {
-    //thread::sleep(Duration::from_secs(0));
-    //let _ = thread::spawn(|| {
-    //thread::sleep(Duration::from_secs(2));
-    //print!("[{}] ", 3);
-    //});
-   //print!("%F{{74}}%~%f");
-   println!("--");
+    let path = env::current_dir().unwrap();
+
+    let branch = match Repository::discover(path) {
+        Ok(repo) => repo_status(&repo),
+        Err(_e) => None,
+    };
+
+    println!("{:?}", branch);
 }
