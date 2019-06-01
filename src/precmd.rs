@@ -1,4 +1,4 @@
-use clap::{ArgMatches};
+use clap::ArgMatches;
 use git2::{self, Repository, StatusOptions};
 use std::env;
 

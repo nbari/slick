@@ -1,35 +1,23 @@
-extern crate clap;
-extern crate git2;
+use clap::{App, AppSettings, Arg, SubCommand};
 
-use clap::{App, AppSettings, SubCommand, Arg};
-
-mod prompt;
 mod precmd;
+mod prompt;
 
 fn main() {
     let matches = App::new("slick")
         .version(env!("CARGO_PKG_VERSION"))
         .setting(AppSettings::SubcommandRequired)
-        .subcommand(SubCommand::with_name("precmd")
-                    .about("precmd")
-        )
-        .subcommand(SubCommand::with_name("prompt")
-                    .about("prompt")
-                    .arg(
-                        Arg::with_name("last_return_code")
+        .subcommand(SubCommand::with_name("precmd").about("precmd"))
+        .subcommand(
+            SubCommand::with_name("prompt")
+                .about("prompt")
+                .arg(
+                    Arg::with_name("last_return_code")
                         .short("r")
-                        .takes_value(true)
-                    )
-                    .arg(
-                        Arg::with_name("keymap")
-                        .short("k")
-                        .takes_value(true)
-                    )
-                    .arg(
-                        Arg::with_name("data")
-                        .short("d")
-                        .takes_value(true)
-                    )
+                        .takes_value(true),
+                )
+                .arg(Arg::with_name("keymap").short("k").takes_value(true))
+                .arg(Arg::with_name("data").short("d").takes_value(true)),
         )
         .get_matches();
 
