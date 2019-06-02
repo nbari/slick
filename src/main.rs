@@ -22,7 +22,7 @@ fn main() {
         .get_matches();
 
     match matches.subcommand() {
-        ("precmd", Some(sub_matches)) => precmd::display(sub_matches),
+        ("precmd", Some(_)) => precmd::display(),
         ("prompt", Some(sub_matches)) => prompt::display(sub_matches),
         _ => (),
     }
