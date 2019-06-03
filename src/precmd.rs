@@ -22,25 +22,37 @@ fn repo_status(repo: &Repository) {
         .include_unmodified(false)
         .no_refresh(false);
 
-    let status_result = repo.statuses(Some(&mut status_opt)).unwrap();
+    let statuses = repo.statuses(Some(&mut status_opt)).unwrap();
 
-    if status_result.len() == 0 {
+    if statuses.len() == 0 {
         print!("{}", prompt);
         return;
     }
 
-    //let mut map: HashMap<&str, u32> = HashMap::new();
-    let mut map: HashMap<git2::Status, u32> = HashMap::new();
-
-    for status_entry in status_result.iter() {
+    let mut map: HashMap<&str, u32> = HashMap::new();
+    for entry in statuses.iter() {
         println!(
             "branch: {} {:?} {:?}",
             prompt,
-            status_entry.path(),
-            status_entry.status()
+            entry.path(),
+            entry.status()
         );
-        *map.entry(status_entry.status()).or_insert(0) += 1;
+
+        let istatus = match entry.status() {
+            s if s.contains(git2::Status::INDEX_NEW) && s.contains(git2::Status::WT_MODIFIED) => "AM",
+            s if s.contains(git2::Status::INDEX_NEW) => "A",
+            s if s.contains(git2::Status::WT_NEW) => "??",
+            s if s.contains(git2::Status::INDEX_MODIFIED) || s.contains(git2::Status::WT_MODIFIED) => "M",
+            s if s.contains(git2::Status::INDEX_DELETED) || s.contains(git2::Status::WT_DELETED) => "D",
+            s if s.contains(git2::Status::INDEX_RENAMED) || s.contains(git2::Status::WT_RENAMED) => "R",
+            s if s.contains(git2::Status::INDEX_TYPECHANGE) || s.contains(git2::Status::WT_TYPECHANGE) => "T",
+            _ => ""
+        };
+
+        *map.entry(istatus).or_insert(0) += 1;
     }
+
+
     println!("{:?}", map);
 }
 
