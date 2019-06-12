@@ -16,7 +16,7 @@ pub fn display(sub_matches: &ArgMatches) {
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
     let num_str = sub_matches.value_of("fd");
     match num_str {
-        None => println!("No idea what your favorite number is."),
+        None => println!("missing file descriptor"),
         Some(s) => match s.parse::<i32>() {
             Ok(n) => {
                 let mut f = unsafe { File::from_raw_fd(n) };
