@@ -2,15 +2,14 @@ use git2::{Repository, StatusOptions, StatusShow};
 use std::collections::HashMap;
 use std::env;
 
-fn is_ahead_behind_remote(repo: &Repository) -> (usize, usize) {
-    let head = repo.revparse_single("HEAD").unwrap().id();
-    if let Some((upstream, _)) = repo.revparse_ext("@{u}").ok() {
-        return match repo.graph_ahead_behind(head, upstream.id()) {
-            Ok((commits_ahead, commits_behind)) => (commits_ahead, commits_behind),
-            Err(_) => (0, 0),
-        };
+pub fn render() {
+    let path = env::current_dir().unwrap();
+    match Repository::discover(path) {
+        Ok(repo) => repo_status(&repo),
+        Err(_) => {
+            return;
+        }
     }
-    (0, 0)
 }
 
 fn repo_status(repo: &Repository) {
@@ -151,12 +150,13 @@ fn get_action(r: &Repository) -> Option<String> {
     None
 }
 
-pub fn display() {
-    let path = env::current_dir().unwrap();
-    match Repository::discover(path) {
-        Ok(repo) => repo_status(&repo),
-        Err(_) => {
-            return;
-        }
+fn is_ahead_behind_remote(repo: &Repository) -> (usize, usize) {
+    let head = repo.revparse_single("HEAD").unwrap().id();
+    if let Some((upstream, _)) = repo.revparse_ext("@{u}").ok() {
+        return match repo.graph_ahead_behind(head, upstream.id()) {
+            Ok((commits_ahead, commits_behind)) => (commits_ahead, commits_behind),
+            Err(_) => (0, 0),
+        };
     }
+    (0, 0)
 }
