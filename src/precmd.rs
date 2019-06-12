@@ -6,6 +6,7 @@ use std::env;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
+    action: String,
     branch: String,
     remote: String,
     status: String,
@@ -36,9 +37,8 @@ fn repo_status(repo: &Repository) {
     }
 
     match get_action(repo) {
-        Some(x) => {
-            println!("action: {}", x);
-            return;
+        Some(action) => {
+            prompt.action = action;
         }
         None => (),
     }
@@ -59,49 +59,49 @@ fn repo_status(repo: &Repository) {
     }
 
     let statuses = repo.statuses(Some(&mut status_opt)).unwrap();
-    if statuses.len() == 0 {
-        prompt.status = format!("{}", "");
-        return;
-    }
-    let mut map: BTreeMap<&str, u32> = BTreeMap::new();
-    for entry in statuses.iter() {
-        let istatus = match entry.status() {
-            s if s.contains(git2::Status::INDEX_NEW) && s.contains(git2::Status::WT_MODIFIED) => {
-                "AM"
-            }
-            s if s.contains(git2::Status::INDEX_MODIFIED)
-                || s.contains(git2::Status::WT_MODIFIED) =>
-            {
-                "M"
-            }
-            s if s.contains(git2::Status::INDEX_DELETED)
-                || s.contains(git2::Status::WT_DELETED) =>
-            {
-                "D"
-            }
-            s if s.contains(git2::Status::INDEX_RENAMED)
-                || s.contains(git2::Status::WT_RENAMED) =>
-            {
-                "R"
-            }
-            s if s.contains(git2::Status::INDEX_TYPECHANGE)
-                || s.contains(git2::Status::WT_TYPECHANGE) =>
-            {
-                "T"
-            }
-            s if s.contains(git2::Status::INDEX_NEW) => "A",
-            s if s.contains(git2::Status::WT_NEW) => "??",
-            _ => "X",
-        };
+    if statuses.len() != 0 {
+        let mut map: BTreeMap<&str, u32> = BTreeMap::new();
+        for entry in statuses.iter() {
+            let istatus = match entry.status() {
+                s if s.contains(git2::Status::INDEX_NEW)
+                    && s.contains(git2::Status::WT_MODIFIED) =>
+                {
+                    "AM"
+                }
+                s if s.contains(git2::Status::INDEX_MODIFIED)
+                    || s.contains(git2::Status::WT_MODIFIED) =>
+                {
+                    "M"
+                }
+                s if s.contains(git2::Status::INDEX_DELETED)
+                    || s.contains(git2::Status::WT_DELETED) =>
+                {
+                    "D"
+                }
+                s if s.contains(git2::Status::INDEX_RENAMED)
+                    || s.contains(git2::Status::WT_RENAMED) =>
+                {
+                    "R"
+                }
+                s if s.contains(git2::Status::INDEX_TYPECHANGE)
+                    || s.contains(git2::Status::WT_TYPECHANGE) =>
+                {
+                    "T"
+                }
+                s if s.contains(git2::Status::INDEX_NEW) => "A",
+                s if s.contains(git2::Status::WT_NEW) => "??",
+                _ => "X",
+            };
 
-        *map.entry(istatus).or_insert(0) += 1;
-    }
-    for (k, v) in map.iter() {
-        prompt.status.push_str(format!("{} {}, ", k, v).as_str());
-    }
-    let len = prompt.status.len();
-    if len > 2 {
-        prompt.status.truncate(len - 2);
+            *map.entry(istatus).or_insert(0) += 1;
+        }
+        for (k, v) in map.iter() {
+            prompt.status.push_str(format!("{} {}, ", k, v).as_str());
+        }
+        let len = prompt.status.len();
+        if len > 2 {
+            prompt.status.truncate(len - 2);
+        }
     }
 
     let serialized = serde_json::to_string(&prompt).unwrap();
