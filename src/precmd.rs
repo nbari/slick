@@ -2,6 +2,23 @@ use git2::{Repository, StatusOptions, StatusShow};
 use std::collections::HashMap;
 use std::env;
 
+#[derive(Debug)]
+struct Prompt {
+    branch: String,
+    remote: String,
+    status: String,
+}
+
+impl Default for Prompt {
+    fn default() -> Prompt {
+        Prompt {
+            branch: String::new(),
+            remote: String::new(),
+            status: String::new(),
+        }
+    }
+}
+
 pub fn render() {
     let path = env::current_dir().unwrap();
     match Repository::discover(path) {
@@ -13,11 +30,13 @@ pub fn render() {
 }
 
 fn repo_status(repo: &Repository) {
-    let mut prompt = String::new();
+    let mut prompt = Prompt::default();
 
     match repo.head() {
         Ok(head) => {
-            prompt.push_str(head.shorthand().unwrap_or("(no branch)"));
+            prompt
+                .branch
+                .push_str(head.shorthand().unwrap_or("(no branch)"));
         }
         Err(_) => {
             return;
@@ -33,7 +52,6 @@ fn repo_status(repo: &Repository) {
     }
 
     let mut status_opt = StatusOptions::new();
-
     status_opt
         .show(StatusShow::IndexAndWorkdir)
         .include_untracked(true)
@@ -42,22 +60,19 @@ fn repo_status(repo: &Repository) {
 
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if ahead > 0 {
-        print!("↑ {}", ahead);
+        prompt.remote.push_str(format!("↑ {}", ahead).as_str());
     }
     if behind > 0 {
-        print!("↓ {}", behind);
+        prompt.remote.push_str(format!(" ↓ {}", behind).as_str());
     }
-    println!("------ {:?}", is_ahead_behind_remote(repo));
 
     let statuses = repo.statuses(Some(&mut status_opt)).unwrap();
     if statuses.len() == 0 {
-        print!("no statuses {}", prompt);
+        prompt.status = format!("{}", "");
         return;
     }
     let mut map: HashMap<&str, u32> = HashMap::new();
     for entry in statuses.iter() {
-        println!("branch: {} {:?} {:?}", prompt, entry.path(), entry.status());
-
         let istatus = match entry.status() {
             s if s.contains(git2::Status::INDEX_NEW) && s.contains(git2::Status::WT_MODIFIED) => {
                 "AM"
@@ -89,8 +104,15 @@ fn repo_status(repo: &Repository) {
 
         *map.entry(istatus).or_insert(0) += 1;
     }
+    for (k, v) in map.iter() {
+        prompt.status.push_str(format!("{} {}, ", k, v).as_str());
+    }
+    let len = prompt.status.len();
+    if len > 2 {
+        prompt.status.truncate(len - 2);
+    }
 
-    println!("map: {:?}", map);
+    println!("{:?}", prompt);
 }
 
 fn get_action(r: &Repository) -> Option<String> {
