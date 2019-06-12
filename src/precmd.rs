@@ -1,22 +1,14 @@
 use git2::{Repository, StatusOptions, StatusShow};
-use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use serde_json;
+use std::collections::BTreeMap;
 use std::env;
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
     branch: String,
     remote: String,
     status: String,
-}
-
-impl Default for Prompt {
-    fn default() -> Prompt {
-        Prompt {
-            branch: String::new(),
-            remote: String::new(),
-            status: String::new(),
-        }
-    }
 }
 
 pub fn render() {
@@ -71,7 +63,7 @@ fn repo_status(repo: &Repository) {
         prompt.status = format!("{}", "");
         return;
     }
-    let mut map: HashMap<&str, u32> = HashMap::new();
+    let mut map: BTreeMap<&str, u32> = BTreeMap::new();
     for entry in statuses.iter() {
         let istatus = match entry.status() {
             s if s.contains(git2::Status::INDEX_NEW) && s.contains(git2::Status::WT_MODIFIED) => {
@@ -112,7 +104,8 @@ fn repo_status(repo: &Repository) {
         prompt.status.truncate(len - 2);
     }
 
-    println!("{:?}", prompt);
+    let serialized = serde_json::to_string(&prompt).unwrap();
+    println!("{}", serialized);
 }
 
 fn get_action(r: &Repository) -> Option<String> {
