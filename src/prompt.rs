@@ -1,5 +1,4 @@
 use clap::ArgMatches;
-use std::{fs::File, io::Read, os::unix::io::FromRawFd};
 
 const COMMAND_KEYMAP: &str = "vicmd";
 const NON_BREAKING_SPACE: &str = " ";
@@ -14,27 +13,7 @@ const PROMPT_VICMD_SYMBOL: &str = ">";
 pub fn display(sub_matches: &ArgMatches) {
     let keymap = sub_matches.value_of("keymap").unwrap_or("main");
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
-    let num_str = sub_matches.value_of("fd");
-    match num_str {
-        None => println!("missing file descriptor"),
-        Some(s) => match s.parse::<i32>() {
-            Ok(n) => {
-                let mut f = unsafe { File::from_raw_fd(n) };
-                let mut input = String::new();
-                match f.read_to_string(&mut input) {
-                    Ok(input) => {
-                        println!("I read {}", input);
-                        return;
-                    }
-                    Err(e) => panic!("{}", e),
-                }
-            }
-            Err(e) => {
-                println!("That's not a number! {}", s);
-                return;
-            }
-        },
-    }
+    let prompt_data = sub_matches.value_of("data").unwrap_or("");
 
     let symbol = match keymap {
         COMMAND_KEYMAP => PROMPT_VICMD_SYMBOL,
@@ -47,8 +26,8 @@ pub fn display(sub_matches: &ArgMatches) {
         _ => PROMPT_ERROR_COLOR,
     };
 
-    //print!(
-    //"%F{{{}}}%~ {}\n%F{{{}}}{}%f{}",
-    //PROMPT_PATH_COLOR, prompt_data, prompt_symbol_color, symbol, NON_BREAKING_SPACE
-    //);
+    print!(
+        "%F{{{}}}%~ {}\n%F{{{}}}{}%f{}",
+        PROMPT_PATH_COLOR, prompt_data, prompt_symbol_color, symbol, NON_BREAKING_SPACE
+    );
 }
