@@ -1,8 +1,7 @@
-use git2::{Repository, StatusOptions, StatusShow};
+use git2::{DiffOptions, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::BTreeMap;
-use std::env;
+use std::{collections::BTreeMap, env, str};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -43,12 +42,21 @@ fn repo_status(repo: &Repository) {
         None => (),
     }
 
-    let mut status_opt = StatusOptions::new();
-    status_opt
-        .show(StatusShow::IndexAndWorkdir)
-        .include_untracked(true)
-        .include_unmodified(false)
-        .no_refresh(false);
+    /*
+    let mut opts = DiffOptions::new();
+    opts.minimal(false);
+    let mut index = repo.index().unwrap();
+    let oid = index.write_tree().unwrap();
+    let tree = repo.find_tree(oid).unwrap();
+    let diff = match repo.diff_tree_to_index(Some(&tree), None, Some(&mut opts)) {
+        Ok(d) => d,
+        Err(e) => panic!("{}", e),
+    };
+    let stats = diff.stats().unwrap();
+    let format = git2::DiffStatsFormat::NUMBER;
+    let buf = stats.to_buf(format, 80).unwrap();
+    println!("{}", str::from_utf8(&*buf).unwrap());
+    */
 
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
@@ -58,6 +66,13 @@ fn repo_status(repo: &Repository) {
         prompt.remote.push_str(format!(" ⇡ {}", ahead).as_str());
     }
     prompt.remote = prompt.remote.trim().to_string();
+
+    let mut status_opt = StatusOptions::new();
+    status_opt
+        .show(StatusShow::IndexAndWorkdir)
+        .include_untracked(true)
+        .include_unmodified(false)
+        .no_refresh(false);
 
     let statuses = repo.statuses(Some(&mut status_opt)).unwrap();
     if statuses.len() != 0 {
