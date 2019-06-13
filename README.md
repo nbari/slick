@@ -8,11 +8,7 @@ async ZSH prompt in Rust inspired by:
 
 ## How to use
 
-Add this to your `.zshrc`
-
-
-# https://www.reddit.com/r/zsh/comments/a6deyd/simple_async_prompt/
-# In a file `prompt_foo_setup` available on `fpath`:
+Add this to your `.zshrc`:
 
 typeset -g slick_prompt_data
 
