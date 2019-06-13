@@ -1,6 +1,7 @@
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 const COMMAND_KEYMAP: &str = "vicmd";
 const NON_BREAKING_SPACE: &str = " ";
@@ -14,6 +15,7 @@ const PROMPT_VICMD_SYMBOL: &str = ">";
 const PROMPT_GIT_MASTER_BRANCH_COLOR: i32 = 160;
 const PROMPT_GIT_BRANCH_COLOR: &str = "yellow";
 const PROMPT_GIT_ACTION_COLOR: &str = "yellow";
+const PROMPT_TIME_ELAPSED_COLOR: &str = "yellow";
 const PROMPT_GIT_STATUS_COLOR: i32 = 5;
 const PROMPT_GIT_REMOTE_COLOR: &str = "cyan";
 
@@ -32,6 +34,25 @@ pub fn display(sub_matches: &ArgMatches) {
     let deserialized: Prompt = match serde_json::from_str(&serialized) {
         Ok(ok) => ok,
         Err(_) => Prompt::default(),
+    };
+
+    // get time elapsed
+    let epochtime: u64 = match sub_matches
+        .value_of("time")
+        .unwrap_or("")
+        .parse::<u64>()
+        .ok()
+    {
+        Some(v) => v,
+        None => match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(n) => n.as_secs(),
+            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
+        },
+    };
+    let d = UNIX_EPOCH + Duration::from_secs(epochtime);
+    let time_elapsed = match d.elapsed() {
+        Ok(elapsed) => elapsed.as_secs(),
+        Err(_) => 0,
     };
 
     let symbol = match keymap {
@@ -86,6 +107,11 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt.push_str(
             format!("%F{{{}}}{} ", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
         );
+    }
+
+    // time elapsed
+    if time_elapsed > 3 {
+        prompt.push_str(format!("%F{{{}}}{}s ", PROMPT_TIME_ELAPSED_COLOR, time_elapsed).as_str());
     }
 
     // second line

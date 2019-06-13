@@ -17,7 +17,8 @@ fn main() {
                         .takes_value(true),
                 )
                 .arg(Arg::with_name("keymap").short("k").takes_value(true))
-                .arg(Arg::with_name("data").short("d").takes_value(true)),
+                .arg(Arg::with_name("data").short("d").takes_value(true))
+                .arg(Arg::with_name("time").short("t").takes_value(true)),
         )
         .get_matches();
 
