@@ -67,20 +67,20 @@ pub fn display(sub_matches: &ArgMatches) {
     };
 
     let mut prompt = String::new();
-    prompt.push_str(format!("%F{{{}}}%~ ", PROMPT_PATH_COLOR).as_str());
+    prompt.push_str(format!("%F{{{}}}%~", PROMPT_PATH_COLOR).as_str());
 
     // branch
     if deserialized.branch == "master" {
         prompt.push_str(
             format!(
-                "%F{{{}}}{} ",
+                " %F{{{}}}{}",
                 PROMPT_GIT_MASTER_BRANCH_COLOR, deserialized.branch
             )
             .as_str(),
         );
     } else {
         prompt.push_str(
-            format!("%F{{{}}}{} ", PROMPT_GIT_BRANCH_COLOR, deserialized.branch).as_str(),
+            format!(" %F{{{}}}{}", PROMPT_GIT_BRANCH_COLOR, deserialized.branch).as_str(),
         );
     }
 
@@ -88,7 +88,7 @@ pub fn display(sub_matches: &ArgMatches) {
     if !deserialized.status.is_empty() {
         prompt.push_str(
             format!(
-                "%F{{{}}}[{}] ",
+                " %F{{{}}}[{}]",
                 PROMPT_GIT_STATUS_COLOR, deserialized.status
             )
             .as_str(),
@@ -98,20 +98,20 @@ pub fn display(sub_matches: &ArgMatches) {
     // git remote
     if !deserialized.remote.is_empty() {
         prompt.push_str(
-            format!("%F{{{}}}{} ", PROMPT_GIT_REMOTE_COLOR, deserialized.remote).as_str(),
+            format!(" %F{{{}}}{}", PROMPT_GIT_REMOTE_COLOR, deserialized.remote).as_str(),
         );
     }
 
     // git action
     if !deserialized.action.is_empty() {
         prompt.push_str(
-            format!("%F{{{}}}{} ", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
+            format!(" %F{{{}}}{}", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
         );
     }
 
     // time elapsed
     if time_elapsed > 3 {
-        prompt.push_str(format!("%F{{{}}}{}s ", PROMPT_TIME_ELAPSED_COLOR, time_elapsed).as_str());
+        prompt.push_str(format!(" %F{{{}}}{}s", PROMPT_TIME_ELAPSED_COLOR, time_elapsed).as_str());
     }
 
     // second line

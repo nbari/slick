@@ -1,6 +1,6 @@
 [package]
 name = "slick"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Nicolas Embriz <nbari@tequila.io>"]
 description = "A ZSH prompt"
 documentation = "https://github.com/nbari/slick/blob/master/README.md"
