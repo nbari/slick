@@ -51,12 +51,13 @@ fn repo_status(repo: &Repository) {
         .no_refresh(false);
 
     let (ahead, behind) = is_ahead_behind_remote(repo);
-    if ahead > 0 {
-        prompt.remote.push_str(format!("↑ {}", ahead).as_str());
-    }
     if behind > 0 {
-        prompt.remote.push_str(format!(" ↓ {}", behind).as_str());
+        prompt.remote.push_str(format!("⇣ {}", behind).as_str());
     }
+    if ahead > 0 {
+        prompt.remote.push_str(format!(" ⇡ {}", ahead).as_str());
+    }
+    prompt.remote = prompt.remote.trim().to_string();
 
     let statuses = repo.statuses(Some(&mut status_opt)).unwrap();
     if statuses.len() != 0 {
