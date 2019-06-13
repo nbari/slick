@@ -6,6 +6,8 @@ async ZSH prompt in Rust inspired by:
 * [purs](https://github.com/xcambar/purs)
 * [zsh-efgit-prompt](https://github.com/ericfreese/zsh-efgit-prompt)
 
+![sreenshot](./prompt.png)
+
 ## How to use
 
 Install:
