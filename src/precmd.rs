@@ -78,11 +78,17 @@ fn repo_status(repo: &Repository) {
     if statuses.len() != 0 {
         let mut map: BTreeMap<&str, u32> = BTreeMap::new();
         for entry in statuses.iter() {
+            // println!("{:?}", entry.status());
             let istatus = match entry.status() {
                 s if s.contains(git2::Status::INDEX_NEW)
                     && s.contains(git2::Status::WT_MODIFIED) =>
                 {
                     "AM"
+                }
+                s if s.contains(git2::Status::INDEX_MODIFIED)
+                    && s.contains(git2::Status::WT_MODIFIED) =>
+                {
+                    "MM"
                 }
                 s if s.contains(git2::Status::INDEX_MODIFIED)
                     || s.contains(git2::Status::WT_MODIFIED) =>
