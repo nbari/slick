@@ -16,15 +16,17 @@ Install:
 
 Then add this to your `.zshrc`:
 
-typeset -g slick_prompt_data
-typeset -g slick_prompt_timestamp
-
 ```sh
+zmodload zsh/datetime
+
+typeset -g slick_prompt_data=" "
+typeset -g slick_prompt_timestamp=$EPOCHSECONDS
+
 function slick_prompt_refresh {
     if ! read -r slick_prompt_data <&$1; then
         slick_prompt_data=" "
     fi
-    PROMPT=$($HOME/.cargo/slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
+    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
 
     zle reset-prompt
 
@@ -34,14 +36,12 @@ function slick_prompt_refresh {
 }
 
 function zle-line-init zle-keymap-select {
-    PROMPT=$($HOME/.cargo/slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
+    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
     zle && zle reset-prompt
 }
 
 function slick_prompt_precmd() {
-    exec {FD}< <(
-        $HOME/projects/rust/slick/target/debug/slick precmd
-    )
+    exec {FD}< <(slick precmd)
     zle -F $FD slick_prompt_refresh
 }
 
