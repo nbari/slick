@@ -1,4 +1,6 @@
 use clap::ArgMatches;
+use serde::{Deserialize, Serialize};
+use serde_json;
 
 const COMMAND_KEYMAP: &str = "vicmd";
 const NON_BREAKING_SPACE: &str = " ";
@@ -9,11 +11,27 @@ const PROMPT_SYMBOL: &str = "$";
 const PROMPT_SYMBOL_COLOR: i32 = 5;
 const PROMPT_VICMD_COLOR: i32 = 3;
 const PROMPT_VICMD_SYMBOL: &str = ">";
+const PROMPT_MASTER_BRANCH_COLOR: i32 = 160;
+const PROMPT_OTHER_BRANCH_COLOR: &str = "yellow";
+const PROMPT_GIT_STATUS_COLOR: i32 = 5;
+const PROMPT_GIT_REMOTE_COLOR: &str = "cyan";
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+struct Prompt {
+    action: String,
+    branch: String,
+    remote: String,
+    status: String,
+}
 
 pub fn display(sub_matches: &ArgMatches) {
     let keymap = sub_matches.value_of("keymap").unwrap_or("main");
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
-    let prompt_data = sub_matches.value_of("data").unwrap_or("");
+    let serialized = sub_matches.value_of("data").unwrap_or("");
+    let deserialized: Prompt = match serde_json::from_str(&serialized) {
+        Ok(ok) => ok,
+        Err(_) => Prompt::default(),
+    };
 
     let symbol = match keymap {
         COMMAND_KEYMAP => PROMPT_VICMD_SYMBOL,
@@ -26,8 +44,54 @@ pub fn display(sub_matches: &ArgMatches) {
         _ => PROMPT_ERROR_COLOR,
     };
 
-    print!(
-        "%F{{{}}}%~ {}\n%F{{{}}}{}%f{}",
-        PROMPT_PATH_COLOR, prompt_data, prompt_symbol_color, symbol, NON_BREAKING_SPACE
+    let mut prompt = String::new();
+    prompt.push_str(format!("%F{{{}}}%~ ", PROMPT_PATH_COLOR).as_str());
+
+    // branch
+    if deserialized.branch == "master" {
+        prompt.push_str(
+            format!(
+                "%F{{{}}}{} ",
+                PROMPT_MASTER_BRANCH_COLOR, deserialized.branch
+            )
+            .as_str(),
+        );
+    } else {
+        prompt.push_str(
+            format!(
+                "%F{{{}}}{} ",
+                PROMPT_OTHER_BRANCH_COLOR, deserialized.branch
+            )
+            .as_str(),
+        );
+    }
+
+    // git status
+    if !deserialized.status.is_empty() {
+        prompt.push_str(
+            format!(
+                "%F{{{}}}[{}] ",
+                PROMPT_GIT_STATUS_COLOR, deserialized.status
+            )
+            .as_str(),
+        );
+    }
+
+    // git remote
+    if !deserialized.remote.is_empty() {
+        prompt.push_str(
+            format!("%F{{{}}}{} ", PROMPT_GIT_REMOTE_COLOR, deserialized.remote).as_str(),
+        );
+    }
+
+    // second line
+    prompt.push_str(
+        format!(
+            "\n%F{{{}}}{}%f{}",
+            prompt_symbol_color, symbol, NON_BREAKING_SPACE
+        )
+        .as_str(),
     );
+
+    print!("{}", prompt);
 }
