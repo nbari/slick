@@ -55,10 +55,4 @@ function slick_prompt_precmd() {
 function slick_prompt_preexec() {
     typeset -g slick_prompt_timestamp=$EPOCHSECONDS
 }
-
-zle -N zle-line-init
-zle -N zle-keymap-select
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd slick_prompt_precmd
-add-zsh-hook preexec slick_prompt_preexec
 ```
