@@ -26,14 +26,14 @@ autoload -Uz add-zsh-hook
 add-zsh-hook precmd slick_prompt_precmd
 add-zsh-hook preexec slick_prompt_preexec
 
-typeset -g slick_prompt_data=" "
-typeset -g slick_prompt_timestamp=$EPOCHSECONDS
+typeset -g slick_prompt_data
+typeset -g slick_prompt_timestamp
 
 function slick_prompt_refresh {
     if ! read -r slick_prompt_data <&$1; then
         slick_prompt_data=" "
     fi
-    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
+    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d ${slick_prompt_data:-" "} -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
 
     zle reset-prompt
 
@@ -43,7 +43,7 @@ function slick_prompt_refresh {
 }
 
 function zle-line-init zle-keymap-select {
-    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d $slick_prompt_data -t $slick_prompt_timestamp)
+    PROMPT=$(slick prompt -k "$KEYMAP" -r $? -d ${slick_prompt_data:-" "})
     zle && zle reset-prompt
 }
 
