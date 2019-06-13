@@ -8,7 +8,13 @@ async ZSH prompt in Rust inspired by:
 
 ## How to use
 
-Add this to your `.zshrc`:
+Install:
+
+    cargo install slick
+
+> check your PATH `$HOME/.cargo/bin/slick`
+
+Then add this to your `.zshrc`:
 
 typeset -g slick_prompt_data
 
