@@ -1,20 +1,19 @@
 [package]
 name = "slick"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Nicolas Embriz <nbari@tequila.io>"]
 description = "A ZSH prompt"
 documentation = "https://github.com/nbari/slick/blob/master/README.md"
 homepage = "https://github.com/nbari/slick"
 repository = "https://github.com/nbari/slick"
 readme = "README.md"
-keywords = ["prompt", "zsh", "shell", "terminal", "git"]
+keywords = ["prompt", "zsh", "shell", "terminal", "git", "async", "zle"]
 categories = ["command-line-utilities", "command-line-interface"]
 license-file = "LICENSE"
 edition = "2018"
 
 [dependencies]
-bincode = "1.1.4"
 clap = "2"
-git2 = "0.8"
+git2 = "0.9"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.39"
+serde_json = "1.0"

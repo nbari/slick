@@ -11,8 +11,9 @@ const PROMPT_SYMBOL: &str = "$";
 const PROMPT_SYMBOL_COLOR: i32 = 5;
 const PROMPT_VICMD_COLOR: i32 = 3;
 const PROMPT_VICMD_SYMBOL: &str = ">";
-const PROMPT_MASTER_BRANCH_COLOR: i32 = 160;
-const PROMPT_OTHER_BRANCH_COLOR: &str = "yellow";
+const PROMPT_GIT_MASTER_BRANCH_COLOR: i32 = 160;
+const PROMPT_GIT_BRANCH_COLOR: &str = "yellow";
+const PROMPT_GIT_ACTION_COLOR: &str = "yellow";
 const PROMPT_GIT_STATUS_COLOR: i32 = 5;
 const PROMPT_GIT_REMOTE_COLOR: &str = "cyan";
 
@@ -52,17 +53,13 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt.push_str(
             format!(
                 "%F{{{}}}{} ",
-                PROMPT_MASTER_BRANCH_COLOR, deserialized.branch
+                PROMPT_GIT_MASTER_BRANCH_COLOR, deserialized.branch
             )
             .as_str(),
         );
     } else {
         prompt.push_str(
-            format!(
-                "%F{{{}}}{} ",
-                PROMPT_OTHER_BRANCH_COLOR, deserialized.branch
-            )
-            .as_str(),
+            format!("%F{{{}}}{} ", PROMPT_GIT_BRANCH_COLOR, deserialized.branch).as_str(),
         );
     }
 
@@ -81,6 +78,13 @@ pub fn display(sub_matches: &ArgMatches) {
     if !deserialized.remote.is_empty() {
         prompt.push_str(
             format!("%F{{{}}}{} ", PROMPT_GIT_REMOTE_COLOR, deserialized.remote).as_str(),
+        );
+    }
+
+    // git action
+    if !deserialized.action.is_empty() {
+        prompt.push_str(
+            format!("%F{{{}}}{} ", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
         );
     }
 
