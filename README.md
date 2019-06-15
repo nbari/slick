@@ -6,7 +6,7 @@ async ZSH prompt in Rust inspired by:
 * [purs](https://github.com/xcambar/purs)
 * [zsh-efgit-prompt](https://github.com/ericfreese/zsh-efgit-prompt)
 
-![sreenshot](./prompt.png)
+[![example](https://img.youtube.com/vi/ZFQ2bykpm6s/0.jpg)](https://www.youtube.com/watch?v=ZFQ2bykpm6s)
 
 ## How to use
 
@@ -34,7 +34,7 @@ function slick_prompt_refresh {
     if ! read -r slick_prompt_data <&$1; then
         slick_prompt_data=" "
     fi
-    PROMPT=$(slick prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-" "} -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
+    PROMPT=$(slick prompt -k "$KEYMAP" -r $exit_status -d $slick_prompt_data -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
 
     zle reset-prompt
 
@@ -44,11 +44,12 @@ function slick_prompt_refresh {
 }
 
 function zle-line-init zle-keymap-select {
-    PROMPT=$(slick prompt -k "$KEYMAP" -d ${slick_prompt_data:-" "})
+    PROMPT=$(slick prompt -k "$KEYMAP" -d ${slick_prompt_data:-""})
     zle && zle reset-prompt
 }
 
 function slick_prompt_precmd() {
+    slick_prompt_data=""
     exec {FD}< <(slick precmd)
     zle -F $FD slick_prompt_refresh
 }

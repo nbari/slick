@@ -1,4 +1,4 @@
-use git2::{DiffOptions, Repository, StatusOptions, StatusShow};
+use git2::{Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{collections::BTreeMap, env, str};

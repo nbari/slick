@@ -1,7 +1,8 @@
 use clap::ArgMatches;
+use compound_duration;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 
 const COMMAND_KEYMAP: &str = "vicmd";
 const NON_BREAKING_SPACE: &str = " ";
@@ -49,9 +50,9 @@ pub fn display(sub_matches: &ArgMatches) {
             Err(_) => panic!("SystemTime before UNIX EPOCH!"),
         },
     };
-    let d = UNIX_EPOCH + Duration::from_secs(epochtime);
+    let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
     let time_elapsed = match d.elapsed() {
-        Ok(elapsed) => elapsed.as_secs(),
+        Ok(elapsed) => elapsed.as_secs() as usize,
         Err(_) => 0,
     };
 
@@ -111,7 +112,14 @@ pub fn display(sub_matches: &ArgMatches) {
 
     // time elapsed
     if time_elapsed > 3 {
-        prompt.push_str(format!(" %F{{{}}}{}s", PROMPT_TIME_ELAPSED_COLOR, time_elapsed).as_str());
+        prompt.push_str(
+            format!(
+                " %F{{{}}}{}",
+                PROMPT_TIME_ELAPSED_COLOR,
+                compound_duration::format_dhms(time_elapsed)
+            )
+            .as_str(),
+        );
     }
 
     // second line
