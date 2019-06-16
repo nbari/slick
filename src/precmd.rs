@@ -1,4 +1,4 @@
-use git2::{Repository, StatusOptions, StatusShow};
+use git2::{DiffOptions, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{collections::BTreeMap, env, str};
@@ -9,6 +9,7 @@ struct Prompt {
     branch: String,
     remote: String,
     status: String,
+    staged: bool,
 }
 
 pub fn render() {
@@ -23,6 +24,8 @@ pub fn render() {
 
 fn repo_status(repo: &Repository) {
     let mut prompt = Prompt::default();
+
+    prompt.staged = is_staged(repo);
 
     match repo.head() {
         Ok(head) => {
@@ -41,22 +44,6 @@ fn repo_status(repo: &Repository) {
         }
         None => (),
     }
-
-    /*
-    let mut opts = DiffOptions::new();
-    opts.minimal(false);
-    let mut index = repo.index().unwrap();
-    let oid = index.write_tree().unwrap();
-    let tree = repo.find_tree(oid).unwrap();
-    let diff = match repo.diff_tree_to_index(Some(&tree), None, Some(&mut opts)) {
-        Ok(d) => d,
-        Err(e) => panic!("{}", e),
-    };
-    let stats = diff.stats().unwrap();
-    let format = git2::DiffStatsFormat::NUMBER;
-    let buf = stats.to_buf(format, 80).unwrap();
-    println!("{}", str::from_utf8(&*buf).unwrap());
-    */
 
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
@@ -196,4 +183,36 @@ fn is_ahead_behind_remote(repo: &Repository) -> (usize, usize) {
         };
     }
     (0, 0)
+}
+
+fn is_staged(repo: &Repository) -> bool {
+    let mut opts = DiffOptions::new();
+    opts.minimal(false);
+    let obj = match repo.head() {
+        Ok(obj) => obj,
+        Err(_) => return false,
+    };
+    let tree = match obj.peel(ObjectType::Tree) {
+        Ok(tree) => tree,
+        Err(_) => return false,
+    };
+    let diff = match repo.diff_tree_to_index(tree.as_tree(), None, Some(&mut opts)) {
+        Ok(d) => d,
+        Err(_) => return false,
+    };
+    let stats = match diff.stats() {
+        Ok(stats) => stats,
+        Err(_) => return false,
+    };
+    if stats.files_changed() > 0 || stats.insertions() > 0 || stats.deletions() > 0 {
+        return true;
+    }
+    return false;
+    /*
+     *  if ! git diff --cached --quiet; then echo staged; fi
+     *
+     * let format = git2::DiffStatsFormat::NUMBER;
+     * let buf = stats.to_buf(format, 80).unwrap();
+     * println!("diff: {}", str::from_utf8(&*buf).unwrap());
+     */
 }

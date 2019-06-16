@@ -13,12 +13,13 @@ const PROMPT_SYMBOL: &str = "$";
 const PROMPT_SYMBOL_COLOR: i32 = 5;
 const PROMPT_VICMD_COLOR: i32 = 3;
 const PROMPT_VICMD_SYMBOL: &str = ">";
-const PROMPT_GIT_MASTER_BRANCH_COLOR: i32 = 160;
-const PROMPT_GIT_BRANCH_COLOR: &str = "yellow";
 const PROMPT_GIT_ACTION_COLOR: &str = "yellow";
-const PROMPT_TIME_ELAPSED_COLOR: &str = "yellow";
-const PROMPT_GIT_STATUS_COLOR: i32 = 5;
+const PROMPT_GIT_BRANCH_COLOR: &str = "yellow";
+const PROMPT_GIT_MASTER_BRANCH_COLOR: i32 = 160;
 const PROMPT_GIT_REMOTE_COLOR: &str = "cyan";
+const PROMPT_GIT_STAGED_COLOR: i32 = 7;
+const PROMPT_GIT_STATUS_COLOR: i32 = 5;
+const PROMPT_TIME_ELAPSED_COLOR: &str = "yellow";
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -26,6 +27,7 @@ struct Prompt {
     branch: String,
     remote: String,
     status: String,
+    staged: bool,
 }
 
 pub fn display(sub_matches: &ArgMatches) {
@@ -108,6 +110,11 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt.push_str(
             format!(" %F{{{}}}{}", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
         );
+    }
+
+    // git staged
+    if deserialized.staged {
+        prompt.push_str(format!(" %F{{{}}}[staged]", PROMPT_GIT_STAGED_COLOR).as_str());
     }
 
     // time elapsed
