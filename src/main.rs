@@ -1,5 +1,6 @@
 use clap::{App, AppSettings, Arg, SubCommand};
 
+mod envs;
 mod precmd;
 mod prompt;
 

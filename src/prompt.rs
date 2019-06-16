@@ -1,25 +1,12 @@
+use crate::envs;
 use clap::ArgMatches;
 use compound_duration;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::time::{Duration, SystemTime};
-
-const COMMAND_KEYMAP: &str = "vicmd";
-const NON_BREAKING_SPACE: &str = " ";
-const NO_ERROR: &str = "0";
-const PROMPT_ERROR_COLOR: i32 = 196;
-const PROMPT_PATH_COLOR: i32 = 74;
-const PROMPT_SYMBOL: &str = "$";
-const PROMPT_SYMBOL_COLOR: i32 = 5;
-const PROMPT_VICMD_COLOR: i32 = 3;
-const PROMPT_VICMD_SYMBOL: &str = ">";
-const PROMPT_GIT_ACTION_COLOR: &str = "yellow";
-const PROMPT_GIT_BRANCH_COLOR: &str = "yellow";
-const PROMPT_GIT_MASTER_BRANCH_COLOR: i32 = 160;
-const PROMPT_GIT_REMOTE_COLOR: &str = "cyan";
-const PROMPT_GIT_STAGED_COLOR: i32 = 7;
-const PROMPT_GIT_STATUS_COLOR: i32 = 5;
-const PROMPT_TIME_ELAPSED_COLOR: &str = "yellow";
+use std::{
+    fmt::Write,
+    time::{Duration, SystemTime},
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -59,84 +46,93 @@ pub fn display(sub_matches: &ArgMatches) {
     };
 
     let symbol = match keymap {
-        COMMAND_KEYMAP => PROMPT_VICMD_SYMBOL,
-        _ => PROMPT_SYMBOL,
+        envs::COMMAND_KEYMAP => envs::PROMPT_VICMD_SYMBOL,
+        _ => envs::PROMPT_SYMBOL,
     };
 
     let prompt_symbol_color = match (symbol, last_return_code) {
-        (PROMPT_VICMD_SYMBOL, _) => PROMPT_VICMD_COLOR,
-        (_, NO_ERROR) => PROMPT_SYMBOL_COLOR,
-        _ => PROMPT_ERROR_COLOR,
+        (envs::PROMPT_VICMD_SYMBOL, _) => envs::PROMPT_VICMD_COLOR,
+        (_, envs::NO_ERROR) => envs::PROMPT_SYMBOL_COLOR,
+        _ => envs::PROMPT_ERROR_COLOR,
     };
 
     let mut prompt = String::new();
-    prompt.push_str(format!("%F{{{}}}%~", PROMPT_PATH_COLOR).as_str());
+    drop(write!(&mut prompt, "%F{{{}}}%~", envs::PROMPT_PATH_COLOR));
 
     // branch
     if deserialized.branch == "master" {
-        prompt.push_str(
-            format!(
-                " %F{{{}}}{}",
-                PROMPT_GIT_MASTER_BRANCH_COLOR, deserialized.branch
-            )
-            .as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}{}",
+            envs::PROMPT_GIT_MASTER_BRANCH_COLOR,
+            deserialized.branch
+        ))
     } else {
-        prompt.push_str(
-            format!(" %F{{{}}}{}", PROMPT_GIT_BRANCH_COLOR, deserialized.branch).as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}{}",
+            envs::PROMPT_GIT_BRANCH_COLOR,
+            deserialized.branch
+        ))
     }
 
     // git status
     if !deserialized.status.is_empty() {
-        prompt.push_str(
-            format!(
-                " %F{{{}}}[{}]",
-                PROMPT_GIT_STATUS_COLOR, deserialized.status
-            )
-            .as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}[{}]",
+            envs::PROMPT_GIT_STATUS_COLOR,
+            deserialized.status
+        ))
     }
 
     // git remote
     if !deserialized.remote.is_empty() {
-        prompt.push_str(
-            format!(" %F{{{}}}{}", PROMPT_GIT_REMOTE_COLOR, deserialized.remote).as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}{}",
+            envs::PROMPT_GIT_REMOTE_COLOR,
+            deserialized.remote
+        ))
     }
 
     // git action
     if !deserialized.action.is_empty() {
-        prompt.push_str(
-            format!(" %F{{{}}}{}", PROMPT_GIT_ACTION_COLOR, deserialized.action).as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}{}",
+            envs::PROMPT_GIT_ACTION_COLOR,
+            deserialized.action
+        ))
     }
 
     // git staged
     if deserialized.staged {
-        prompt.push_str(format!(" %F{{{}}}[staged]", PROMPT_GIT_STAGED_COLOR).as_str());
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}[staged]",
+            envs::PROMPT_GIT_STAGED_COLOR
+        ))
     }
 
     // time elapsed
     if time_elapsed > 3 {
-        prompt.push_str(
-            format!(
-                " %F{{{}}}{}",
-                PROMPT_TIME_ELAPSED_COLOR,
-                compound_duration::format_dhms(time_elapsed)
-            )
-            .as_str(),
-        );
+        drop(write!(
+            &mut prompt,
+            " %F{{{}}}{}",
+            envs::PROMPT_TIME_ELAPSED_COLOR,
+            compound_duration::format_dhms(time_elapsed)
+        ))
     }
 
     // second line
-    prompt.push_str(
-        format!(
-            "\n%F{{{}}}{}%f{}",
-            prompt_symbol_color, symbol, NON_BREAKING_SPACE
-        )
-        .as_str(),
-    );
+    drop(write!(
+        &mut prompt,
+        "\n%F{{{}}}{}%f{}",
+        prompt_symbol_color,
+        symbol,
+        envs::NON_BREAKING_SPACE
+    ));
 
     print!("{}", prompt);
 }
