@@ -1,15 +1,16 @@
+use crate::envs::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{collections::BTreeMap, env, fmt::Write, str};
+use std::{collections::BTreeMap, env, fmt::Write, process::Command, str, thread};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
     action: String,
     branch: String,
     remote: String,
-    status: String,
     staged: bool,
+    status: String,
 }
 
 pub fn render() {
@@ -35,6 +36,18 @@ fn build_prompt(repo: &Repository) {
         ))
     } else {
         return;
+    }
+
+    // git fetch
+    if get_env("SLICK_PROMPT_GIT_FETCH") == "1" {
+        thread::spawn(move || {
+            Command::new("git")
+                .arg("-c")
+                .arg("gc.auto=0")
+                .arg("fetch")
+                .output()
+                .expect("failed to execute process");
+        });
     }
 
     // git remote
