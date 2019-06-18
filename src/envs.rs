@@ -1,19 +1,22 @@
-// TODO
-// read from environment
-//
-pub const COMMAND_KEYMAP: &str = "vicmd";
-pub const NON_BREAKING_SPACE: &str = " ";
-pub const NO_ERROR: &str = "0";
-pub const PROMPT_ERROR_COLOR: &str = "196";
-pub const PROMPT_PATH_COLOR: &str = "74";
-pub const PROMPT_SYMBOL: &str = "$";
-pub const PROMPT_SYMBOL_COLOR: &str = "5";
-pub const PROMPT_VICMD_COLOR: &str = "3";
-pub const PROMPT_VICMD_SYMBOL: &str = ">";
-pub const PROMPT_GIT_ACTION_COLOR: &str = "3";
-pub const PROMPT_GIT_BRANCH_COLOR: &str = "3";
-pub const PROMPT_GIT_MASTER_BRANCH_COLOR: &str = "160";
-pub const PROMPT_GIT_REMOTE_COLOR: &str = "6";
-pub const PROMPT_GIT_STAGED_COLOR: &str = "7";
-pub const PROMPT_GIT_STATUS_COLOR: &str = "5";
-pub const PROMPT_TIME_ELAPSED_COLOR: &str = "3";
+use std::env;
+
+pub fn get_env(e: &str) -> String {
+    let value = match e {
+        "SLICK_PROMPT_ERROR_COLOR" => env::var(e).unwrap_or("196".into()),
+        "SLICK_PROMPT_GIT_ACTION_COLOR" => env::var(e).unwrap_or("3".into()),
+        "SLICK_PROMPT_GIT_BRANCH_COLOR" => env::var(e).unwrap_or("3".into()),
+        "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => env::var(e).unwrap_or("160".into()),
+        "SLICK_PROMPT_GIT_REMOTE_COLOR" => env::var(e).unwrap_or("6".into()),
+        "SLICK_PROMPT_GIT_STAGED_COLOR" => env::var(e).unwrap_or("7".into()),
+        "SLICK_PROMPT_GIT_STATUS_COLOR" => env::var(e).unwrap_or("5".into()),
+        "SLICK_PROMPT_PATH_COLOR" => env::var(e).unwrap_or("74".into()),
+        "SLICK_PROMPT_SYMBOL" => env::var(e).unwrap_or("$".into()),
+        "SLICK_PROMPT_SYMBOL_COLOR" => env::var(e).unwrap_or("5".into()),
+        "SLICK_PROMPT_TIME_ELAPSED_COLOR" => env::var(e).unwrap_or("3".into()),
+        "SLICK_PROMPT_VICMD_COLOR" => env::var(e).unwrap_or("3".into()),
+        "SLICK_PROMPT_VICMD_SYMBOL" => env::var(e).unwrap_or(">".into()),
+        "SLICK_PROMPT_NON_BREAKING_SPACE" => env::var(e).unwrap_or(" ".into()),
+        _ => "??".into(),
+    };
+    return value;
+}

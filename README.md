@@ -1,10 +1,6 @@
 # slick
 
-async ZSH prompt in Rust inspired by:
-
-* [pure](https://github.com/sindresorhus/pure)
-* [purs](https://github.com/xcambar/purs)
-* [zsh-efgit-prompt](https://github.com/ericfreese/zsh-efgit-prompt)
+async ZSH prompt
 
 [![example](https://img.youtube.com/vi/ZFQ2bykpm6s/0.jpg)](https://www.youtube.com/watch?v=ZFQ2bykpm6s)
 
@@ -56,3 +52,9 @@ function slick_prompt_preexec() {
     slick_prompt_timestamp=$EPOCHSECONDS
 }
 ```
+
+Inspired by:
+
+* [pure](https://github.com/sindresorhus/pure)
+* [purs](https://github.com/xcambar/purs)
+* [zsh-efgit-prompt](https://github.com/ericfreese/zsh-efgit-prompt)

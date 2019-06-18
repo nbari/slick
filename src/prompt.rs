@@ -1,4 +1,4 @@
-use crate::envs;
+use crate::envs::get_env;
 use clap::ArgMatches;
 use compound_duration;
 use serde::{Deserialize, Serialize};
@@ -45,33 +45,38 @@ pub fn display(sub_matches: &ArgMatches) {
         Err(_) => 0,
     };
 
-    let symbol = match keymap {
-        envs::COMMAND_KEYMAP => envs::PROMPT_VICMD_SYMBOL,
-        _ => envs::PROMPT_SYMBOL,
-    };
+    let mut symbol = get_env("SLICK_PROMPT_SYMBOL");
+    if keymap == "vicmd" {
+        symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
+    }
 
-    let prompt_symbol_color = match (symbol, last_return_code) {
-        (envs::PROMPT_VICMD_SYMBOL, _) => envs::PROMPT_VICMD_COLOR,
-        (_, envs::NO_ERROR) => envs::PROMPT_SYMBOL_COLOR,
-        _ => envs::PROMPT_ERROR_COLOR,
-    };
+    let mut prompt_symbol_color = get_env("SLICK_PROMPT_ERROR_COLOR");
+    if symbol == get_env("SLICK_PROMPT_VICMD_SYMBOL") {
+        prompt_symbol_color = get_env("SLICK_PROMPT_VICMD_COLOR")
+    } else if last_return_code == "0" {
+        prompt_symbol_color = get_env("SLICK_PROMPT_SYMBOL_COLOR")
+    }
 
     let mut prompt = String::new();
-    drop(write!(&mut prompt, "%F{{{}}}%~", envs::PROMPT_PATH_COLOR));
+    drop(write!(
+        &mut prompt,
+        "%F{{{}}}%~",
+        get_env("SLICK_PROMPT_PATH_COLOR")
+    ));
 
     // branch
     if deserialized.branch == "master" {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",
-            envs::PROMPT_GIT_MASTER_BRANCH_COLOR,
+            get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
             deserialized.branch
         ))
     } else {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",
-            envs::PROMPT_GIT_BRANCH_COLOR,
+            get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
             deserialized.branch
         ))
     }
@@ -81,7 +86,7 @@ pub fn display(sub_matches: &ArgMatches) {
         drop(write!(
             &mut prompt,
             " %F{{{}}}[{}]",
-            envs::PROMPT_GIT_STATUS_COLOR,
+            get_env("SLICK_PROMPT_GIT_STATUS_COLOR"),
             deserialized.status
         ))
     }
@@ -91,7 +96,7 @@ pub fn display(sub_matches: &ArgMatches) {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",
-            envs::PROMPT_GIT_REMOTE_COLOR,
+            get_env("SLICK_PROMPT_GIT_REMOTE_COLOR"),
             deserialized.remote
         ))
     }
@@ -101,7 +106,7 @@ pub fn display(sub_matches: &ArgMatches) {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",
-            envs::PROMPT_GIT_ACTION_COLOR,
+            get_env("SLICK_PROMPT_GIT_ACTION_COLOR"),
             deserialized.action
         ))
     }
@@ -111,7 +116,7 @@ pub fn display(sub_matches: &ArgMatches) {
         drop(write!(
             &mut prompt,
             " %F{{{}}}[staged]",
-            envs::PROMPT_GIT_STAGED_COLOR
+            get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
         ))
     }
 
@@ -120,7 +125,7 @@ pub fn display(sub_matches: &ArgMatches) {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",
-            envs::PROMPT_TIME_ELAPSED_COLOR,
+            get_env("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
             compound_duration::format_dhms(time_elapsed)
         ))
     }
@@ -131,7 +136,7 @@ pub fn display(sub_matches: &ArgMatches) {
         "\n%F{{{}}}{}%f{}",
         prompt_symbol_color,
         symbol,
-        envs::NON_BREAKING_SPACE
+        get_env("SLICK_PROMPT_NON_BREAKING_SPACE"),
     ));
 
     print!("{}", prompt);
