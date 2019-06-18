@@ -53,6 +53,28 @@ function slick_prompt_preexec() {
 }
 ```
 
+## customizations
+
+Set this environment variables to change color/symbols, for example:
+
+    export SLICK_PROMPT_ERROR_COLOR=88
+    export SLICK_PROMPT_GIT_FETCH=0
+    export SLICK_PROMPT_GIT_ACTION_COLOR=1
+    export SLICK_PROMPT_GIT_BRANCH_COLOR=202
+    export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=white
+    export SLICK_PROMPT_GIT_REMOTE_COLOR=40
+    export SLICK_PROMPT_GIT_STAGED_COLOR=1
+    export SLICK_PROMPT_GIT_STATUS_COLOR=cyan
+    export SLICK_PROMPT_PATH_COLOR=blue
+    export SLICK_PROMPT_SYMBOL="❯"
+    export SLICK_PROMPT_SYMBOL_COLOR=magenta
+    export SLICK_PROMPT_TIME_ELAPSED_COLOR=1
+    export SLICK_PROMPT_VICMD_COLOR="yellow"
+    export SLICK_PROMPT_VICMD_SYMBOL="❮"
+
+`SLICK_PROMPT_GIT_FETCH=0`  prevents doing a `git fetch`
+
+___
 Inspired by:
 
 * [pure](https://github.com/sindresorhus/pure)
