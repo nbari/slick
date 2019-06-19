@@ -237,7 +237,7 @@ dependencies = [
 
 [[package]]
 name = "slick"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "clap 2.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "compound_duration 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

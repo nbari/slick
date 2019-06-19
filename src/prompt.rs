@@ -121,7 +121,11 @@ pub fn display(sub_matches: &ArgMatches) {
     }
 
     // time elapsed
-    if time_elapsed > 3 {
+    let max_time: usize = match get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME").parse() {
+        Ok(n) => n,
+        Err(_) => 5,
+    };
+    if time_elapsed > max_time {
         drop(write!(
             &mut prompt,
             " %F{{{}}}{}",

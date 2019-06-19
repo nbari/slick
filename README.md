@@ -57,10 +57,11 @@ function slick_prompt_preexec() {
 
 Set this environment variables to change color/symbols, for example:
 
+    export SLICK_PROMPT_CMD_MAX_EXEC_TIME=3
     export SLICK_PROMPT_ERROR_COLOR=88
-    export SLICK_PROMPT_GIT_FETCH=0
     export SLICK_PROMPT_GIT_ACTION_COLOR=1
     export SLICK_PROMPT_GIT_BRANCH_COLOR=202
+    export SLICK_PROMPT_GIT_FETCH=0
     export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=white
     export SLICK_PROMPT_GIT_REMOTE_COLOR=40
     export SLICK_PROMPT_GIT_STAGED_COLOR=1
