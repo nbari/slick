@@ -10,7 +10,7 @@ Install:
 
     cargo install slick
 
-> check your PATH `$HOME/.cargo/bin/slick`
+> check your PATH `$HOME/.cargo/bin/slick`, to install cargo: `curl https://sh.rustup.rs -sSf | sh`
 
 Then add this to your `.zshrc`:
 
