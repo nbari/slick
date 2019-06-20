@@ -29,6 +29,7 @@ function slick_prompt_refresh {
     local exit_status=$?
     read -r -u $1 slick_prompt_data
     PROMPT=$(slick prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""} -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
+    unset slick_prompt_timestamp
 
     zle reset-prompt
 
