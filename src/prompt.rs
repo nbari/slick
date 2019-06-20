@@ -7,6 +7,7 @@ use std::{
     fmt::Write,
     time::{Duration, SystemTime},
 };
+use users::{get_current_uid, get_user_by_uid};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -15,6 +16,14 @@ struct Prompt {
     remote: String,
     status: String,
     staged: bool,
+}
+
+fn is_root() -> bool {
+    let user = get_user_by_uid(get_current_uid()).unwrap();
+    if user.uid() == 0 {
+        return true;
+    }
+    return false;
 }
 
 pub fn display(sub_matches: &ArgMatches) {
@@ -46,6 +55,9 @@ pub fn display(sub_matches: &ArgMatches) {
     };
 
     let mut symbol = get_env("SLICK_PROMPT_SYMBOL");
+    if is_root() {
+        symbol = get_env("SLICK_PROMPT_ROOT_SYMBOL");
+    }
     if keymap == "vicmd" {
         symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
     }
@@ -58,6 +70,16 @@ pub fn display(sub_matches: &ArgMatches) {
     }
 
     let mut prompt = String::new();
+
+    // prefix with "root" if UID = 0
+    if is_root() {
+        drop(write!(
+            &mut prompt,
+            "%F{{{}}}%n ",
+            get_env("SLICK_PROMPT_ROOT_COLOR")
+        ));
+    }
+
     drop(write!(
         &mut prompt,
         "%F{{{}}}%~",
