@@ -70,6 +70,7 @@ Set this environment variables to change color/symbols, for example:
     export SLICK_PROMPT_PATH_COLOR=blue
     export SLICK_PROMPT_ROOT_COLOR="red"
     export SLICK_PROMPT_ROOT_SYMBOL="#"
+    export SLICK_PROMPT_SSH_COLOR=2
     export SLICK_PROMPT_SYMBOL="❯"
     export SLICK_PROMPT_SYMBOL_COLOR=magenta
     export SLICK_PROMPT_TIME_ELAPSED_COLOR=1

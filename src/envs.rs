@@ -15,6 +15,7 @@ pub fn get_env(e: &str) -> String {
         "SLICK_PROMPT_PATH_COLOR" => env::var(e).unwrap_or("74".into()),
         "SLICK_PROMPT_ROOT_COLOR" => env::var(e).unwrap_or("1".into()),
         "SLICK_PROMPT_ROOT_SYMBOL" => env::var(e).unwrap_or("#".into()),
+        "SLICK_PROMPT_SSH_COLOR" => env::var(e).unwrap_or("8".into()),
         "SLICK_PROMPT_SYMBOL" => env::var(e).unwrap_or("$".into()),
         "SLICK_PROMPT_SYMBOL_COLOR" => env::var(e).unwrap_or("5".into()),
         "SLICK_PROMPT_TIME_ELAPSED_COLOR" => env::var(e).unwrap_or("3".into()),

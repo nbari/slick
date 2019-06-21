@@ -39,7 +39,7 @@ fn build_prompt(repo: &Repository) {
     }
 
     // git fetch
-    if get_env("SLICK_PROMPT_GIT_FETCH") == "1" {
+    if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
         thread::spawn(move || {
             Command::new("git")
                 .arg("-c")

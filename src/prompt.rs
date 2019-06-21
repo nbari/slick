@@ -4,6 +4,7 @@ use compound_duration;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{
+    env,
     fmt::Write,
     time::{Duration, SystemTime},
 };
@@ -80,6 +81,16 @@ pub fn display(sub_matches: &ArgMatches) {
         ));
     }
 
+    // if SSH_CONNECTION environment var found
+    if let Ok(_) = env::var("SSH_CONNECTION") {
+        drop(write!(
+            &mut prompt,
+            "%F{{{}}}%n@%m ",
+            get_env("SLICK_PROMPT_SSH_COLOR")
+        ));
+    }
+
+    // start the prompt with the current dir %~
     drop(write!(
         &mut prompt,
         "%F{{{}}}%~",
