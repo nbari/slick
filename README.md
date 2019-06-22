@@ -47,8 +47,9 @@ function zle-line-init zle-keymap-select {
 
 function slick_prompt_precmd() {
     slick_prompt_data=""
-    exec {FD}< <($SLICK_PATH precmd)
-    zle -F $FD slick_prompt_refresh
+    local fd
+    exec {fd}< <($SLICK_PATH precmd)
+    zle -F $fd slick_prompt_refresh
 }
 
 function slick_prompt_preexec() {
