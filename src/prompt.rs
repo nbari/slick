@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{
     env,
-    fmt::Write,
     time::{Duration, SystemTime},
 };
 use users::{get_current_uid, get_user_by_uid};
@@ -14,7 +13,7 @@ use users::{get_current_uid, get_user_by_uid};
 struct Prompt {
     action: String,
     branch: String,
-    remote: String,
+    remote: Vec<String>,
     status: String,
     staged: bool,
 }
@@ -55,6 +54,7 @@ pub fn display(sub_matches: &ArgMatches) {
         Err(_) => 0,
     };
 
+    // define symbol
     let mut symbol = get_env("SLICK_PROMPT_SYMBOL");
     if is_root() {
         symbol = get_env("SLICK_PROMPT_ROOT_SYMBOL");
@@ -63,6 +63,7 @@ pub fn display(sub_matches: &ArgMatches) {
         symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
     }
 
+    // symbol color
     let mut prompt_symbol_color = get_env("SLICK_PROMPT_ERROR_COLOR");
     if symbol == get_env("SLICK_PROMPT_VICMD_SYMBOL") {
         prompt_symbol_color = get_env("SLICK_PROMPT_VICMD_COLOR")
@@ -70,45 +71,31 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt_symbol_color = get_env("SLICK_PROMPT_SYMBOL_COLOR")
     }
 
-    let mut prompt = String::new();
+    let mut prompt: Vec<String> = Vec::new();
 
     // prefix with "root" if UID = 0
     if is_root() {
-        drop(write!(
-            &mut prompt,
-            "%F{{{}}}%n ",
-            get_env("SLICK_PROMPT_ROOT_COLOR")
-        ));
+        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
     }
 
     // if SSH_CONNECTION environment var found
     if let Ok(_) = env::var("SSH_CONNECTION") {
-        drop(write!(
-            &mut prompt,
-            "%F{{{}}}%n@%m ",
-            get_env("SLICK_PROMPT_SSH_COLOR")
-        ));
+        prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")))
     }
 
     // start the prompt with the current dir %~
-    drop(write!(
-        &mut prompt,
-        "%F{{{}}}%~",
-        get_env("SLICK_PROMPT_PATH_COLOR")
-    ));
+    prompt.push(format!("%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR")));
 
     // branch
     if deserialized.branch == "master" {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}{}",
+        prompt.push(format!(
+            "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
             deserialized.branch
         ))
     } else {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}{}",
+        prompt.push(format!(
+            "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
             deserialized.branch
         ))
@@ -116,9 +103,8 @@ pub fn display(sub_matches: &ArgMatches) {
 
     // git status
     if !deserialized.status.is_empty() {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}[{}]",
+        prompt.push(format!(
+            "%F{{{}}}[{}]",
             get_env("SLICK_PROMPT_GIT_STATUS_COLOR"),
             deserialized.status
         ))
@@ -126,19 +112,17 @@ pub fn display(sub_matches: &ArgMatches) {
 
     // git remote
     if !deserialized.remote.is_empty() {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}{}",
+        prompt.push(format!(
+            "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_COLOR"),
-            deserialized.remote
+            deserialized.remote.join(" ")
         ))
     }
 
     // git action
     if !deserialized.action.is_empty() {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}{}",
+        prompt.push(format!(
+            "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_ACTION_COLOR"),
             deserialized.action
         ))
@@ -146,9 +130,8 @@ pub fn display(sub_matches: &ArgMatches) {
 
     // git staged
     if deserialized.staged {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}[staged]",
+        prompt.push(format!(
+            "%F{{{}}}[staged]",
             get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
         ))
     }
@@ -159,22 +142,20 @@ pub fn display(sub_matches: &ArgMatches) {
         Err(_) => 5,
     };
     if time_elapsed > max_time {
-        drop(write!(
-            &mut prompt,
-            " %F{{{}}}{}",
+        prompt.push(format!(
+            "%F{{{}}}{}",
             get_env("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
             compound_duration::format_dhms(time_elapsed)
         ))
     }
 
-    // second line
-    drop(write!(
-        &mut prompt,
+    // second prompt line
+    prompt.push(format!(
         "\n%F{{{}}}{}%f{}",
         prompt_symbol_color,
         symbol,
         get_env("SLICK_PROMPT_NON_BREAKING_SPACE"),
     ));
 
-    print!("{}", prompt);
+    print!("{}", prompt.join(" "));
 }

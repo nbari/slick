@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, env, fmt::Write, process::Command, str, thread}
 struct Prompt {
     action: String,
     branch: String,
-    remote: String,
+    remote: Vec<String>,
     staged: bool,
     status: String,
 }
@@ -53,12 +53,11 @@ fn build_prompt(repo: &Repository) {
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
-        drop(write!(prompt.remote, "⇣ {}", behind))
+        prompt.remote.push(format!("⇣ {}", behind))
     }
     if ahead > 0 {
-        drop(write!(prompt.remote, " ⇡ {}", ahead))
+        prompt.remote.push(format!("⇡ {}", ahead))
     }
-    prompt.remote = prompt.remote.trim().to_string();
 
     // git action
     if let Some(action) = get_action(repo) {
@@ -82,7 +81,7 @@ fn build_prompt(repo: &Repository) {
 }
 
 fn get_status(repo: &Repository) -> Result<String, Error> {
-    let mut status = String::new();
+    let mut status: Vec<String> = Vec::new();
     let mut status_opt = StatusOptions::new();
     status_opt
         .show(StatusShow::IndexAndWorkdir)
@@ -136,15 +135,10 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
             *map.entry(istatus).or_insert(0) += 1;
         }
         for (k, v) in map.iter() {
-            drop(write!(status, "{} {}, ", k, v))
+            status.push(format!("{} {}", k, v))
         }
-        let len = status.len();
-        if len > 2 {
-            status.truncate(len - 2);
-        }
-        return Ok(status);
     }
-    Ok(status)
+    Ok(status.join(" "))
 }
 
 fn get_action(repo: &Repository) -> Option<String> {
