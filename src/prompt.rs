@@ -87,18 +87,20 @@ pub fn display(sub_matches: &ArgMatches) {
     prompt.push(format!("%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR")));
 
     // branch
-    if deserialized.branch == "master" {
-        prompt.push(format!(
-            "%F{{{}}}{}",
-            get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
-            deserialized.branch
-        ))
-    } else {
-        prompt.push(format!(
-            "%F{{{}}}{}",
-            get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
-            deserialized.branch
-        ))
+    if !deserialized.branch.is_empty() {
+        if deserialized.branch == "master" {
+            prompt.push(format!(
+                "%F{{{}}}{}",
+                get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
+                deserialized.branch
+            ))
+        } else {
+            prompt.push(format!(
+                "%F{{{}}}{}",
+                get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
+                deserialized.branch
+            ))
+        }
     }
 
     // git status
