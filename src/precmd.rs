@@ -35,7 +35,7 @@ fn build_prompt(repo: &Repository) {
             head.shorthand().unwrap_or("(no branch)")
         ))
     } else {
-        return;
+        prompt.branch = "(no branch)".into()
     }
 
     // git fetch
