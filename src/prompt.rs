@@ -1,10 +1,13 @@
 use crate::envs::get_env;
 use clap::ArgMatches;
 use compound_duration;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::{
     env,
+    process::Command,
     time::{Duration, SystemTime},
 };
 use users::{get_current_uid, get_user_by_uid};
@@ -22,6 +25,28 @@ fn is_root() -> bool {
     let user = get_user_by_uid(get_current_uid()).unwrap();
     if user.uid() == 0 {
         return true;
+    }
+    return false;
+}
+
+fn is_remote() -> bool {
+    if let Ok(_) = env::var("SSH_CONNECTION") {
+        return true;
+    }
+    if let Ok(re) = Regex::new(r"\((.*)\)$") {
+        let output = Command::new("whoo")
+            .arg("-m")
+            .output()
+            .expect("failed to execute process");
+        if let Ok(raw) = String::from_utf8(output.stdout) {
+            if let Some(caps) = re.captures(&raw) {
+                if let Some(ip) = caps.get(1) {
+                    // check ip
+                    let _addr = ip.as_str().parse::<IpAddr>();
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }
@@ -73,14 +98,22 @@ pub fn display(sub_matches: &ArgMatches) {
 
     let mut prompt: Vec<String> = Vec::new();
 
-    // prefix with "root" if UID = 0
-    if is_root() {
-        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
-    }
-
-    // if SSH_CONNECTION environment var found
-    if let Ok(_) = env::var("SSH_CONNECTION") {
-        prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")))
+    if is_remote() {
+        if is_root() {
+            // prefix with "root" if UID = 0
+            prompt.push(format!(
+                "%F{{{}}}%n%F{{{}}}@%m",
+                get_env("SLICK_PROMPT_ROOT_COLOR"),
+                get_env("SLICK_PROMPT_SSH_COLOR")
+            ))
+        } else {
+            prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")))
+        }
+    } else {
+        if is_root() {
+            // prefix with "root" if UID = 0
+            prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
+        }
     }
 
     // start the prompt with the current dir %~
