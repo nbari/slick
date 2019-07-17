@@ -33,9 +33,9 @@ fn is_remote() -> bool {
     if let Ok(_) = env::var("SSH_CONNECTION") {
         return true;
     }
-    if let Ok(re) = Regex::new(r"\((.*)\)$") {
+    if let Ok(re) = Regex::new(r"\((.*)\)[\n\r]+$") {
         let output = Command::new("who")
-            .arg("-m")
+            .arg("-T")
             .output()
             .expect("failed to execute process");
         if let Ok(raw) = String::from_utf8(output.stdout) {
