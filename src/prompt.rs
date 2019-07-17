@@ -4,9 +4,9 @@ use compound_duration;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::{
     env,
+    net::IpAddr,
     process::Command,
     time::{Duration, SystemTime},
 };
@@ -34,7 +34,7 @@ fn is_remote() -> bool {
         return true;
     }
     if let Ok(re) = Regex::new(r"\((.*)\)$") {
-        let output = Command::new("whoo")
+        let output = Command::new("who")
             .arg("-m")
             .output()
             .expect("failed to execute process");
@@ -42,8 +42,9 @@ fn is_remote() -> bool {
             if let Some(caps) = re.captures(&raw) {
                 if let Some(ip) = caps.get(1) {
                     // check ip
-                    let _addr = ip.as_str().parse::<IpAddr>();
-                    return true;
+                    if let Ok(_) = ip.as_str().parse::<IpAddr>() {
+                        return true;
+                    }
                 }
             }
         }
