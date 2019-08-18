@@ -33,7 +33,10 @@ fn is_remote() -> bool {
     if let Ok(_) = env::var("SSH_CONNECTION") {
         return true;
     }
-    if let Ok(re) = Regex::new(r"\((.*)\)[\n\r]+$") {
+    let user = get_user_by_uid(get_current_uid()).unwrap();
+    let mut rx = String::from(format!("(?:{}.*)", user.name().to_string_lossy()));
+    rx.push_str(r"\(([0-9a-fA-F]+.*)\)$");
+    if let Ok(re) = Regex::new(rx.as_str()) {
         let output = Command::new("who")
             .arg("-T")
             .output()
