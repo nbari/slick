@@ -35,7 +35,7 @@ fn is_remote() -> bool {
     }
     let user = get_user_by_uid(get_current_uid()).unwrap();
     let mut rx = String::from(format!("(?:{}.*)", user.name().to_string_lossy()));
-    rx.push_str(r"\(([0-9a-fA-F]+.*)\)$");
+    rx.push_str(r"\(([0-9a-fA-F]+.*)\)");
     if let Ok(re) = Regex::new(rx.as_str()) {
         let output = Command::new("who")
             .arg("-T")
