@@ -1,13 +1,10 @@
 use crate::envs::get_env;
 use clap::ArgMatches;
 use compound_duration;
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::{
     env,
-    net::IpAddr,
-    process::Command,
     time::{Duration, SystemTime},
 };
 use users::{get_current_uid, get_user_by_uid};
@@ -32,25 +29,6 @@ fn is_root() -> bool {
 fn is_remote() -> bool {
     if let Ok(_) = env::var("SSH_CONNECTION") {
         return true;
-    }
-    let user = get_user_by_uid(get_current_uid()).unwrap();
-    let mut rx = String::from(format!("(?:{}.*)", user.name().to_string_lossy()));
-    rx.push_str(r"\(([0-9a-fA-F]+.*)\)");
-    if let Ok(re) = Regex::new(rx.as_str()) {
-        let output = Command::new("who")
-            .arg("-T")
-            .output()
-            .expect("failed to execute process");
-        if let Ok(raw) = String::from_utf8(output.stdout) {
-            if let Some(caps) = re.captures(&raw) {
-                if let Some(ip) = caps.get(1) {
-                    // check ip
-                    if let Ok(_) = ip.as_str().parse::<IpAddr>() {
-                        return true;
-                    }
-                }
-            }
-        }
     }
     return false;
 }
