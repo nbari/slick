@@ -23,14 +23,11 @@ fn is_root() -> bool {
     if user.uid() == 0 {
         return true;
     }
-    return false;
+    false
 }
 
 fn is_remote() -> bool {
-    if let Ok(_) = env::var("SSH_CONNECTION") {
-        return true;
-    }
-    return false;
+    env::var("SSH_CONNECTION").is_ok()
 }
 
 pub fn display(sub_matches: &ArgMatches) {
@@ -52,7 +49,7 @@ pub fn display(sub_matches: &ArgMatches) {
         Some(v) => v,
         None => match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n.as_secs(),
-            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
+            _ => panic!("SystemTime before UNIX EPOCH!"),
         },
     };
     let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
@@ -62,13 +59,13 @@ pub fn display(sub_matches: &ArgMatches) {
     };
 
     // define symbol
-    let mut symbol = get_env("SLICK_PROMPT_SYMBOL");
-    if is_root() {
-        symbol = get_env("SLICK_PROMPT_ROOT_SYMBOL");
-    }
-    if keymap == "vicmd" {
-        symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
-    }
+    let symbol = if keymap == "vicmd" {
+        get_env("SLICK_PROMPT_VICMD_SYMBOL")
+    } else if is_root() {
+        get_env("SLICK_PROMPT_ROOT_SYMBOL")
+    } else {
+        get_env("SLICK_PROMPT_SYMBOL")
+    };
 
     // symbol color
     let mut prompt_symbol_color = get_env("SLICK_PROMPT_ERROR_COLOR");

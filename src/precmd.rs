@@ -2,7 +2,7 @@ use crate::envs::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use serde_json;
-use std::{collections::BTreeMap, env, fmt::Write, process::Command, str, thread};
+use std::{collections::BTreeMap, env, process::Command, str, thread};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -29,11 +29,7 @@ fn build_prompt(repo: &Repository) {
 
     // get branch
     if let Ok(head) = repo.head() {
-        drop(write!(
-            prompt.branch,
-            "{}",
-            head.shorthand().unwrap_or("(no branch)")
-        ))
+        prompt.branch = head.shorthand().unwrap_or("(no branch)").to_string()
     } else {
         prompt.branch = "(no branch)".into()
     }
@@ -90,7 +86,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
         .no_refresh(false);
 
     let statuses = repo.statuses(Some(&mut status_opt))?;
-    if statuses.len() != 0 {
+    if !statuses.is_empty() {
         let mut map: BTreeMap<&str, u32> = BTreeMap::new();
         for entry in statuses.iter() {
             // println!("{:?}", entry.status());
@@ -201,7 +197,7 @@ fn get_action(repo: &Repository) -> Option<String> {
 fn is_ahead_behind_remote(repo: &Repository) -> (usize, usize) {
     if let Ok(head) = repo.revparse_single("HEAD") {
         let head = head.id();
-        if let Some((upstream, _)) = repo.revparse_ext("@{u}").ok() {
+        if let Ok((upstream, _)) = repo.revparse_ext("@{u}") {
             return match repo.graph_ahead_behind(head, upstream.id()) {
                 Ok((commits_ahead, commits_behind)) => (commits_ahead, commits_behind),
                 Err(_) => (0, 0),
