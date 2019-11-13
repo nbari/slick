@@ -91,11 +91,9 @@ pub fn display(sub_matches: &ArgMatches) {
         } else {
             prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")))
         }
-    } else {
-        if is_root() {
-            // prefix with "root" if UID = 0
-            prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
-        }
+    } else if is_root() {
+        // prefix with "root" if UID = 0
+        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
     }
 
     // start the prompt with the current dir %~

@@ -1,7 +1,7 @@
 use std::env;
 
 pub fn get_env(e: &str) -> String {
-    let value = match e {
+    match e {
         "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => env::var(e).unwrap_or("5".into()),
         "SLICK_PROMPT_ERROR_COLOR" => env::var(e).unwrap_or("196".into()),
         "SLICK_PROMPT_GIT_ACTION_COLOR" => env::var(e).unwrap_or("3".into()),
@@ -22,6 +22,5 @@ pub fn get_env(e: &str) -> String {
         "SLICK_PROMPT_VICMD_COLOR" => env::var(e).unwrap_or("3".into()),
         "SLICK_PROMPT_VICMD_SYMBOL" => env::var(e).unwrap_or(">".into()),
         _ => "??".into(),
-    };
-    return value;
+    }
 }
