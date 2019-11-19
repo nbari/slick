@@ -15,11 +15,10 @@ struct Prompt {
 
 pub fn render() {
     if let Ok(path) = env::current_dir() {
-        match Repository::discover(path) {
-            Ok(repo) => build_prompt(&repo),
-            Err(_) => {
-                return;
-            }
+        if let Ok(repo) = Repository::discover(path) {
+            build_prompt(&repo)
+        } else {
+            return;
         }
     }
 }
@@ -49,10 +48,10 @@ fn build_prompt(repo: &Repository) {
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
-        prompt.remote.push(format!("⇣ {}", behind))
+        prompt.remote.push(format!("\u{21e3} {}", behind))
     }
     if ahead > 0 {
-        prompt.remote.push(format!("⇡ {}", ahead))
+        prompt.remote.push(format!("\u{21e1} {}", ahead))
     }
 
     // git action
@@ -90,7 +89,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
         let mut map: BTreeMap<&str, u32> = BTreeMap::new();
         for entry in statuses.iter() {
             // println!("{:?}", entry.status());
-            let istatus = match entry.status() {
+            let status = match entry.status() {
                 s if s.contains(git2::Status::INDEX_NEW)
                     && s.contains(git2::Status::WT_MODIFIED) =>
                 {
@@ -128,9 +127,9 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
                 _ => "X",
             };
 
-            *map.entry(istatus).or_insert(0) += 1;
+            *map.entry(status).or_insert(0) += 1;
         }
-        for (k, v) in map.iter() {
+        for (k, v) in &map {
             status.push(format!("{} {}", k, v))
         }
     }

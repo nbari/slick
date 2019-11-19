@@ -34,7 +34,7 @@ pub fn display(sub_matches: &ArgMatches) {
     let keymap = sub_matches.value_of("keymap").unwrap_or("main");
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
     let serialized = sub_matches.value_of("data").unwrap_or("");
-    let deserialized: Prompt = match serde_json::from_str(&serialized) {
+    let deserialized: Prompt = match serde_json::from_str(serialized) {
         Ok(ok) => ok,
         Err(_) => Prompt::default(),
     };

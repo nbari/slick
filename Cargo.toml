@@ -9,7 +9,7 @@ repository = "https://github.com/nbari/slick"
 readme = "README.md"
 keywords = ["prompt", "zsh", "shell", "terminal", "git"]
 categories = ["command-line-utilities", "command-line-interface"]
-license-file = "LICENSE"
+license = "BSD-3-Clause"
 edition = "2018"
 
 [dependencies]
