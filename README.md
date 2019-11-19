@@ -1,6 +1,8 @@
-# slick
+# slick - async ZSH prompt
 
-async ZSH prompt
+[![crates.io](https://img.shields.io/crates/v/slick.svg)](https://crates.io/crates/slick)
+[![Build Status](https://travis-ci.org/nbari/slick.svg?branch=master)](https://travis-ci.org/nbari/slick)
+
 
 [![example](https://img.youtube.com/vi/ZFQ2bykpm6s/0.jpg)](https://www.youtube.com/watch?v=ZFQ2bykpm6s)
 
