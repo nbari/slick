@@ -1,10 +1,9 @@
 use crate::envs::get_env;
 use clap::ArgMatches;
-use compound_duration;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use std::{
     env,
+    process::exit,
     time::{Duration, SystemTime},
 };
 use users::{get_current_uid, get_user_by_uid};
@@ -49,12 +48,15 @@ pub fn display(sub_matches: &ArgMatches) {
         Some(v) => v,
         None => match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(n) => n.as_secs(),
-            _ => panic!("SystemTime before UNIX EPOCH!"),
+            Err(e) => {
+                eprintln!("SystemTime before UNIX EPOCH!: {}", e);
+                exit(1)
+            }
         },
     };
     let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
     let time_elapsed = match d.elapsed() {
-        Ok(elapsed) => elapsed.as_secs() as usize,
+        Ok(elapsed) => elapsed.as_secs(),
         Err(_) => 0,
     };
 
@@ -149,7 +151,7 @@ pub fn display(sub_matches: &ArgMatches) {
     }
 
     // time elapsed
-    let max_time: usize = match get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME").parse() {
+    let max_time: u64 = match get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME").parse() {
         Ok(n) => n,
         Err(_) => 5,
     };
