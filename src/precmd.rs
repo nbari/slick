@@ -10,6 +10,7 @@ struct Prompt {
     remote: Vec<String>,
     staged: bool,
     status: String,
+    u_name: String,
 }
 
 pub fn render() {
@@ -24,6 +25,13 @@ pub fn render() {
 
 fn build_prompt(repo: &Repository) {
     let mut prompt = Prompt::default();
+
+    // get user.name
+    if let Ok(config) = repo.config() {
+        prompt.u_name = config
+            .get_string("user.name")
+            .unwrap_or_else(|_| "".to_string())
+    }
 
     // get branch
     if let Ok(head) = repo.head() {

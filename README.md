@@ -72,6 +72,7 @@ Set this environment variables to change color/symbols, for example:
     export SLICK_PROMPT_GIT_REMOTE_COLOR=40
     export SLICK_PROMPT_GIT_STAGED_COLOR=1
     export SLICK_PROMPT_GIT_STATUS_COLOR=cyan
+    export SLICK_PROMPT_GIT_UNAME_COLOR=8
     export SLICK_PROMPT_PATH_COLOR=blue
     export SLICK_PROMPT_ROOT_COLOR="red"
     export SLICK_PROMPT_ROOT_SYMBOL="#"
@@ -84,6 +85,10 @@ Set this environment variables to change color/symbols, for example:
 
 
 `SLICK_PROMPT_GIT_FETCH=0` prevents doing a `git fetch`
+
+To prevent displaying the git user.name:
+
+    export SLICK_PROMPT_NO_GIT_UNAME=1
 
 ___
 Inspired by:

@@ -13,8 +13,9 @@ struct Prompt {
     action: String,
     branch: String,
     remote: Vec<String>,
-    status: String,
     staged: bool,
+    status: String,
+    u_name: String,
 }
 
 fn is_root() -> bool {
@@ -95,12 +96,36 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
     }
 
+    // PIPENV
+    if !get_env("PIPENV_ACTIVE").is_empty() {
+        let venv = match get_env("VIRTUAL_ENV").split('/').last() {
+            Some(s) => s.split('-').next().unwrap_or("").to_string(),
+            None => String::new(),
+        };
+        if !venv.is_empty() {
+            prompt.push(format!(
+                "%F{{{}}}({})",
+                get_env("PIPENV_ACTIVE_COLOR"),
+                venv
+            ))
+        }
+    }
+
+    // git u_name
+    if get_env("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
+        prompt.push(format!(
+            "%F{{{}}}{}",
+            get_env("SLICK_PROMPT_GIT_UNAME_COLOR"),
+            deserialized.u_name
+        ))
+    }
+
     // start the prompt with the current dir %~
     prompt.push(format!("%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR")));
 
     // branch
     if !deserialized.branch.is_empty() {
-        if deserialized.branch == "master" {
+        if deserialized.branch == "master" || deserialized.branch == "main" {
             prompt.push(format!(
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
@@ -151,10 +176,9 @@ pub fn display(sub_matches: &ArgMatches) {
     }
 
     // time elapsed
-    let max_time: u64 = match get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME").parse() {
-        Ok(n) => n,
-        Err(_) => 5,
-    };
+    let max_time: u64 = get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
+        .parse()
+        .unwrap_or(5);
     if time_elapsed > max_time {
         prompt.push(format!(
             "%F{{{}}}{}",
