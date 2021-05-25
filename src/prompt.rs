@@ -97,21 +97,15 @@ pub fn display(sub_matches: &ArgMatches) {
     }
 
     // PIPENV
-    if !get_env("PIPENV_ACTIVE").is_empty() {
+    if !get_env("PIPENV_ACTIVE").is_empty() || !get_env("VIRTUAL_ENV").is_empty() {
         let venv = match get_env("VIRTUAL_ENV").split('/').last() {
-            Some(s) => s.split('-').next().unwrap_or("").to_string(),
-            None => String::new(),
-        };
-        if !venv.is_empty() {
-            prompt.push(format!(
-                "%F{{{}}}({})",
-                get_env("PIPENV_ACTIVE_COLOR"),
-                venv
-            ))
-        }
-    } else if !get_env("VIRTUAL_ENV").is_empty() {
-        let venv = match get_env("VIRTUAL_ENV").split('/').last() {
-            Some(s) => s.to_string(),
+            Some(s) => {
+                if !get_env("PIPENV_ACTIVE").is_empty() {
+                    s.split('-').next().unwrap_or("").to_string()
+                } else {
+                    s.to_string()
+                }
+            }
             None => String::new(),
         };
         if !venv.is_empty() {
