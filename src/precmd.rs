@@ -188,9 +188,8 @@ fn get_action(repo: &Repository) -> Option<String> {
     if gitdir.join("CHERRY_PICK_HEAD").exists() {
         if gitdir.join("sequencer").exists() {
             return Some("cherry-seq".to_string());
-        } else {
-            return Some("cherry".to_string());
         }
+        return Some("cherry".to_string());
     }
 
     if gitdir.join("sequencer").exists() {

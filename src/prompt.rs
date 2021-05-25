@@ -109,6 +109,18 @@ pub fn display(sub_matches: &ArgMatches) {
                 venv
             ))
         }
+    } else if !get_env("VIRTUAL_ENV").is_empty() {
+        let venv = match get_env("VIRTUAL_ENV").split('/').last() {
+            Some(s) => s.to_string(),
+            None => String::new(),
+        };
+        if !venv.is_empty() {
+            prompt.push(format!(
+                "%F{{{}}}({})",
+                get_env("PIPENV_ACTIVE_COLOR"),
+                venv
+            ))
+        }
     }
 
     // git u_name
