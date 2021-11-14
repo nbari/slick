@@ -12,7 +12,15 @@ Install:
 
     cargo install slick
 
-> check your PATH `$HOME/.cargo/bin/slick`, to install cargo: `curl https://sh.rustup.rs -sSf | sh`
+To install cargo:
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+If in Linux you may need install this:
+
+    apt install -y build-essential libssl-dev pkg-config
+
+check your PATH `$HOME/.cargo/bin/slick`:w
 
 Then add this to your `.zshrc`:
 
