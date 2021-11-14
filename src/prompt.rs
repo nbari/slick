@@ -73,9 +73,9 @@ pub fn display(sub_matches: &ArgMatches) {
     // symbol color
     let mut prompt_symbol_color = get_env("SLICK_PROMPT_ERROR_COLOR");
     if symbol == get_env("SLICK_PROMPT_VICMD_SYMBOL") {
-        prompt_symbol_color = get_env("SLICK_PROMPT_VICMD_COLOR")
+        prompt_symbol_color = get_env("SLICK_PROMPT_VICMD_COLOR");
     } else if last_return_code == "0" {
-        prompt_symbol_color = get_env("SLICK_PROMPT_SYMBOL_COLOR")
+        prompt_symbol_color = get_env("SLICK_PROMPT_SYMBOL_COLOR");
     }
 
     let mut prompt: Vec<String> = Vec::new();
@@ -87,23 +87,23 @@ pub fn display(sub_matches: &ArgMatches) {
                 "%F{{{}}}%n%F{{{}}}@%m",
                 get_env("SLICK_PROMPT_ROOT_COLOR"),
                 get_env("SLICK_PROMPT_SSH_COLOR")
-            ))
+            ));
         } else {
-            prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")))
+            prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")));
         }
     } else if is_root() {
         // prefix with "root" if UID = 0
-        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")))
+        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")));
     }
 
     // PIPENV
     if !get_env("PIPENV_ACTIVE").is_empty() || !get_env("VIRTUAL_ENV").is_empty() {
         let venv = match get_env("VIRTUAL_ENV").split('/').last() {
             Some(s) => {
-                if !get_env("PIPENV_ACTIVE").is_empty() {
-                    s.split('-').next().unwrap_or("").to_string()
-                } else {
+                if get_env("PIPENV_ACTIVE").is_empty() {
                     s.to_string()
+                } else {
+                    s.split('-').next().unwrap_or("").to_string()
                 }
             }
             None => String::new(),
@@ -113,7 +113,7 @@ pub fn display(sub_matches: &ArgMatches) {
                 "%F{{{}}}({})",
                 get_env("PIPENV_ACTIVE_COLOR"),
                 venv
-            ))
+            ));
         }
     }
 
@@ -123,7 +123,7 @@ pub fn display(sub_matches: &ArgMatches) {
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_UNAME_COLOR"),
             deserialized.u_name
-        ))
+        ));
     }
 
     // start the prompt with the current dir %~
@@ -136,13 +136,13 @@ pub fn display(sub_matches: &ArgMatches) {
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
                 deserialized.branch
-            ))
+            ));
         } else {
             prompt.push(format!(
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
                 deserialized.branch
-            ))
+            ));
         }
     }
 
@@ -152,7 +152,7 @@ pub fn display(sub_matches: &ArgMatches) {
             "%F{{{}}}[{}]",
             get_env("SLICK_PROMPT_GIT_STATUS_COLOR"),
             deserialized.status
-        ))
+        ));
     }
 
     // git remote
@@ -161,7 +161,7 @@ pub fn display(sub_matches: &ArgMatches) {
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_COLOR"),
             deserialized.remote.join(" ")
-        ))
+        ));
     }
 
     // git action
@@ -170,7 +170,7 @@ pub fn display(sub_matches: &ArgMatches) {
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_ACTION_COLOR"),
             deserialized.action
-        ))
+        ));
     }
 
     // git staged
@@ -178,7 +178,7 @@ pub fn display(sub_matches: &ArgMatches) {
         prompt.push(format!(
             "%F{{{}}}[staged]",
             get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
-        ))
+        ));
     }
 
     // time elapsed
@@ -190,7 +190,7 @@ pub fn display(sub_matches: &ArgMatches) {
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
             compound_duration::format_dhms(time_elapsed)
-        ))
+        ));
     }
 
     // second prompt line

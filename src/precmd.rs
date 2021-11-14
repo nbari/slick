@@ -16,9 +16,7 @@ struct Prompt {
 pub fn render() {
     if let Ok(path) = env::current_dir() {
         if let Ok(repo) = Repository::discover(path) {
-            build_prompt(&repo)
-        } else {
-            return;
+            build_prompt(&repo);
         }
     }
 }
@@ -30,14 +28,14 @@ fn build_prompt(repo: &Repository) {
     if let Ok(config) = repo.config() {
         prompt.u_name = config
             .get_string("user.name")
-            .unwrap_or_else(|_| "".to_string())
+            .unwrap_or_else(|_| "".to_string());
     }
 
     // get branch
     if let Ok(head) = repo.head() {
-        prompt.branch = head.shorthand().unwrap_or("(no branch)").to_string()
+        prompt.branch = head.shorthand().unwrap_or("(no branch)").to_string();
     } else {
-        prompt.branch = "(no branch)".into()
+        prompt.branch = "(no branch)".into();
     }
 
     // git fetch
@@ -55,10 +53,10 @@ fn build_prompt(repo: &Repository) {
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
-        prompt.remote.push(format!("\u{21e3} {}", behind))
+        prompt.remote.push(format!("\u{21e3} {}", behind));
     }
     if ahead > 0 {
-        prompt.remote.push(format!("\u{21e1} {}", ahead))
+        prompt.remote.push(format!("\u{21e1} {}", ahead));
     }
 
     // git action
@@ -68,12 +66,12 @@ fn build_prompt(repo: &Repository) {
 
     // git status
     if let Ok(status) = get_status(repo) {
-        prompt.status = status
+        prompt.status = status;
     }
 
     // git staged
     if let Ok(staged) = is_staged(repo) {
-        prompt.staged = staged
+        prompt.staged = staged;
     }
 
     // return prompt
@@ -137,7 +135,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
             *map.entry(status).or_insert(0) += 1;
         }
         for (k, v) in &map {
-            status.push(format!("{} {}", k, v))
+            status.push(format!("{} {}", k, v));
         }
     }
     Ok(status.join(" "))
