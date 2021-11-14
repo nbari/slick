@@ -93,7 +93,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
     if !statuses.is_empty() {
         let mut map: BTreeMap<&str, u32> = BTreeMap::new();
         for entry in statuses.iter() {
-            // println!("{:?}", entry.status());
+            // println!("{:#?}, {:#?}", entry.path(), entry.status());
             let status = match entry.status() {
                 s if s.contains(git2::Status::INDEX_NEW)
                     && s.contains(git2::Status::WT_MODIFIED) =>
