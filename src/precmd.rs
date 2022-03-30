@@ -1,4 +1,4 @@
-use crate::envs::get_env;
+use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, env, process::Command, str, thread};

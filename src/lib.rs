@@ -1,3 +1,6 @@
+pub mod precmd;
+pub mod prompt;
+
 use std::env;
 
 pub fn get_env(e: &str) -> String {

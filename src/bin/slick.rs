@@ -1,22 +1,19 @@
-use clap::{App, AppSettings, Arg, SubCommand};
-
-mod envs;
-mod precmd;
-mod prompt;
+use clap::{Arg, Command};
+use slick::{precmd, prompt};
 
 fn main() {
-    let matches = App::new("slick")
+    let matches = Command::new("slick")
         .version(env!("CARGO_PKG_VERSION"))
-        .setting(AppSettings::SubcommandRequired)
+        .subcommand_required(true)
         .subcommand(
-            SubCommand::with_name("precmd")
+            Command::new("precmd")
                 .about("precmd")
-                .help("Executed before each prompt."),
+                .override_help("Executed before each prompt."),
         )
         .subcommand(
-            SubCommand::with_name("prompt")
+            Command::new("prompt")
                 .about("prompt")
-                .help(
+                .override_help(
                     r##"Builds the prompt, render is affected by this environment vars:
 
 The default values are:
@@ -43,20 +40,16 @@ The default values are:
     PIPENV_ACTIVE_COLOR=7
 "##,
                 )
-                .arg(
-                    Arg::with_name("last_return_code")
-                        .short("r")
-                        .takes_value(true),
-                )
-                .arg(Arg::with_name("keymap").short("k").takes_value(true))
-                .arg(Arg::with_name("data").short("d").takes_value(true))
-                .arg(Arg::with_name("time").short("t").takes_value(true)),
+                .arg(Arg::new("last_return_code").short('r').takes_value(true))
+                .arg(Arg::new("keymap").short('k').takes_value(true))
+                .arg(Arg::new("data").short('d').takes_value(true))
+                .arg(Arg::new("time").short('t').takes_value(true)),
         )
         .get_matches();
 
     match matches.subcommand() {
-        ("precmd", Some(_)) => precmd::render(),
-        ("prompt", Some(sub_matches)) => prompt::display(sub_matches),
+        Some(("precmd", _)) => precmd::render(),
+        Some(("prompt", sub_m)) => prompt::display(sub_m),
         _ => (),
     }
 }
