@@ -3,6 +3,7 @@ pub mod prompt;
 
 use std::env;
 
+#[must_use]
 pub fn get_env(e: &str) -> String {
     match e {
         "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => env::var(e).unwrap_or_else(|_| "5".into()),
