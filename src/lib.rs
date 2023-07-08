@@ -13,6 +13,8 @@ pub fn get_env(e: &str) -> String {
         "SLICK_PROMPT_GIT_FETCH" => env::var(e).unwrap_or_else(|_| "1".into()),
         "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => env::var(e).unwrap_or_else(|_| "160".into()),
         "SLICK_PROMPT_GIT_REMOTE_COLOR" => env::var(e).unwrap_or_else(|_| "6".into()),
+        "SLICK_PROMPT_GIT_REMOTE_AHEAD" => env::var(e).unwrap_or_else(|_| "\u{21e3}".into()),
+        "SLICK_PROMPT_GIT_REMOTE_BEHIND" => env::var(e).unwrap_or_else(|_| "\u{21e1}".into()),
         "SLICK_PROMPT_GIT_STAGED_COLOR" => env::var(e).unwrap_or_else(|_| "7".into()),
         "SLICK_PROMPT_GIT_STATUS_COLOR" => env::var(e).unwrap_or_else(|_| "5".into()),
         "SLICK_PROMPT_GIT_UNAME_COLOR" => env::var(e).unwrap_or_else(|_| "8".into()),

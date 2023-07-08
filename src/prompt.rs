@@ -34,32 +34,28 @@ pub fn display(sub_matches: &ArgMatches) {
     let keymap = sub_matches.value_of("keymap").unwrap_or("main");
     let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
     let serialized = sub_matches.value_of("data").unwrap_or("");
-    let deserialized: Prompt = match serde_json::from_str(serialized) {
-        Ok(ok) => ok,
-        Err(_) => Prompt::default(),
-    };
+    let deserialized: Prompt =
+        serde_json::from_str(serialized).map_or_else(|_| Prompt::default(), |ok| ok);
 
     // get time elapsed
-    let epochtime: u64 = match sub_matches
+    let epochtime: u64 = sub_matches
         .value_of("time")
         .unwrap_or("")
         .parse::<u64>()
         .ok()
-    {
-        Some(v) => v,
-        None => match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(n) => n.as_secs(),
-            Err(e) => {
-                eprintln!("SystemTime before UNIX EPOCH!: {}", e);
-                exit(1)
-            }
-        },
-    };
+        .map_or_else(
+            || match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                Ok(n) => n.as_secs(),
+                Err(e) => {
+                    eprintln!("SystemTime before UNIX EPOCH!: {}", e);
+                    exit(1)
+                }
+            },
+            |v| v,
+        );
+
     let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
-    let time_elapsed = match d.elapsed() {
-        Ok(elapsed) => elapsed.as_secs(),
-        Err(_) => 0,
-    };
+    let time_elapsed = d.elapsed().map_or(0, |elapsed| elapsed.as_secs());
 
     // define symbol
     let symbol = if keymap == "vicmd" {
@@ -98,16 +94,16 @@ pub fn display(sub_matches: &ArgMatches) {
 
     // PIPENV
     if !get_env("PIPENV_ACTIVE").is_empty() || !get_env("VIRTUAL_ENV").is_empty() {
-        let venv = match get_env("VIRTUAL_ENV").split('/').last() {
-            Some(s) => {
+        let venv = get_env("VIRTUAL_ENV")
+            .split('/')
+            .last()
+            .map_or_else(String::new, |s| {
                 if get_env("PIPENV_ACTIVE").is_empty() {
                     s.to_string()
                 } else {
                     s.split('-').next().unwrap_or("").to_string()
                 }
-            }
-            None => String::new(),
-        };
+            });
         if !venv.is_empty() {
             prompt.push(format!(
                 "%F{{{}}}({})",
