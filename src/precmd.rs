@@ -54,14 +54,14 @@ fn build_prompt(repo: &Repository) {
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
         prompt.remote.push(format!(
-            "{} {}",
+            "{}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_BEHIND"),
             behind
         ));
     }
     if ahead > 0 {
         prompt.remote.push(format!(
-            "{} {}",
+            "{}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_AHEAD"),
             ahead
         ));
