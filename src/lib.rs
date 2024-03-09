@@ -28,10 +28,10 @@ pub fn get_env(e: &str) -> String {
         "SLICK_PROMPT_TIME_ELAPSED_COLOR" => env::var(e).unwrap_or_else(|_| "3".into()),
         "SLICK_PROMPT_VICMD_COLOR" => env::var(e).unwrap_or_else(|_| "3".into()),
         "SLICK_PROMPT_VICMD_SYMBOL" => env::var(e).unwrap_or_else(|_| ">".into()),
-        "SLICK_PROMPT_NO_GIT_UNAME" => env::var(e).unwrap_or_else(|_| "".into()),
-        "PIPENV_ACTIVE" => env::var(e).unwrap_or_else(|_| "".into()),
+        "SLICK_PROMPT_NO_GIT_UNAME" => env::var(e).unwrap_or_else(|_| String::new()),
+        "PIPENV_ACTIVE" => env::var(e).unwrap_or_else(|_| String::new()),
         "PIPENV_ACTIVE_COLOR" => env::var(e).unwrap_or_else(|_| "7".into()),
-        "VIRTUAL_ENV" => env::var(e).unwrap_or_else(|_| "".into()),
+        "VIRTUAL_ENV" => env::var(e).unwrap_or_else(|_| String::new()),
         _ => "??".into(),
     }
 }

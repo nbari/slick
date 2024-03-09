@@ -30,24 +30,30 @@ fn is_remote() -> bool {
     env::var("SSH_CONNECTION").is_ok()
 }
 
-pub fn display(sub_matches: &ArgMatches) {
-    let keymap = sub_matches.value_of("keymap").unwrap_or("main");
-    let last_return_code = sub_matches.value_of("last_return_code").unwrap_or("0");
-    let serialized = sub_matches.value_of("data").unwrap_or("");
+pub fn display(matches: &ArgMatches) {
+    let keymap = matches
+        .get_one("keymap")
+        .map_or("main".to_string(), |s: &String| s.to_string());
+    let last_return_code = matches
+        .get_one("last_return_code")
+        .map_or("0".to_string(), |s: &String| s.to_string());
+    let serialized = matches
+        .get_one("data")
+        .map_or(String::new(), |s: &String| s.to_string());
     let deserialized: Prompt =
-        serde_json::from_str(serialized).map_or_else(|_| Prompt::default(), |ok| ok);
+        serde_json::from_str(&serialized).map_or_else(|_| Prompt::default(), |ok| ok);
 
     // get time elapsed
-    let epochtime: u64 = sub_matches
-        .value_of("time")
-        .unwrap_or("")
+    let epochtime: u64 = matches
+        .get_one("time")
+        .map_or(String::new(), |s: &String| s.to_string())
         .parse::<u64>()
         .ok()
         .map_or_else(
             || match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                 Ok(n) => n.as_secs(),
                 Err(e) => {
-                    eprintln!("SystemTime before UNIX EPOCH!: {}", e);
+                    eprintln!("SystemTime before UNIX EPOCH!: {e}");
                     exit(1)
                 }
             },
