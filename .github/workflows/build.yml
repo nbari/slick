@@ -50,4 +50,4 @@ jobs:
 
       - name: Build
         run: |-
-          cargo build --release --locked --target ${{ matrix.target }}
+          cargo build --release --locked --target ${{ matrix.target }} --features "openssl/vendored"
