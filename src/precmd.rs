@@ -1,7 +1,12 @@
 use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, env, process::Command, str, thread};
+use std::{
+    collections::BTreeMap,
+    env,
+    process::{Command, Stdio},
+    str, thread,
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -42,10 +47,15 @@ fn build_prompt(repo: &Repository) {
     if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
         thread::spawn(move || {
             Command::new("git")
+                .env("GIT_TERMINAL_PROMPT", "0")
                 .arg("-c")
                 .arg("gc.auto=0")
                 .arg("fetch")
-                .output()
+                .arg("--quiet")
+                .arg("--no-tags")
+                .arg("--no-recurse-submodules")
+                .stderr(Stdio::null())
+                .spawn()
                 .expect("failed to execute process");
         });
     }
