@@ -77,6 +77,8 @@ Set this environment variables to change color/symbols, for example:
     export SLICK_PROMPT_GIT_BRANCH_COLOR=202
     export SLICK_PROMPT_GIT_FETCH=0
     export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=white
+    export SLICK_PROMPT_GIT_REMOTE_AHEAD=""
+    export SLICK_PROMPT_GIT_REMOTE_BEHIND=""
     export SLICK_PROMPT_GIT_REMOTE_COLOR=40
     export SLICK_PROMPT_GIT_STAGED_COLOR=1
     export SLICK_PROMPT_GIT_STATUS_COLOR=cyan
@@ -90,6 +92,7 @@ Set this environment variables to change color/symbols, for example:
     export SLICK_PROMPT_TIME_ELAPSED_COLOR=1
     export SLICK_PROMPT_VICMD_COLOR="yellow"
     export SLICK_PROMPT_VICMD_SYMBOL="❮"
+    export SLICK_PROMPT_NON_BREAKING_SPACE=" "
 
 
 `SLICK_PROMPT_GIT_FETCH=0` prevents doing a `git fetch`
