@@ -43,10 +43,10 @@ The default values are:
     PIPENV_ACTIVE_COLOR=7
 "#,
                 )
-                .arg(Arg::new("last_return_code").short('r').takes_value(true))
-                .arg(Arg::new("keymap").short('k').takes_value(true))
-                .arg(Arg::new("data").short('d').takes_value(true))
-                .arg(Arg::new("time").short('t').takes_value(true)),
+                .arg(Arg::new("last_return_code").short('r').num_args(1))
+                .arg(Arg::new("keymap").short('k').num_args(1))
+                .arg(Arg::new("data").short('d').num_args(1))
+                .arg(Arg::new("time").short('t').num_args(1)),
         )
         .get_matches();
 

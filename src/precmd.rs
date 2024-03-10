@@ -1,7 +1,12 @@
 use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, env, process::Command, str, thread};
+use std::{
+    collections::BTreeMap,
+    env,
+    process::{Command, Stdio},
+    str, thread,
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -28,7 +33,7 @@ fn build_prompt(repo: &Repository) {
     if let Ok(config) = repo.config() {
         prompt.u_name = config
             .get_string("user.name")
-            .unwrap_or_else(|_| "".to_string());
+            .unwrap_or_else(|_| String::new());
     }
 
     // get branch
@@ -42,10 +47,15 @@ fn build_prompt(repo: &Repository) {
     if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
         thread::spawn(move || {
             Command::new("git")
+                .env("GIT_TERMINAL_PROMPT", "0")
                 .arg("-c")
                 .arg("gc.auto=0")
                 .arg("fetch")
-                .output()
+                .arg("--quiet")
+                .arg("--no-tags")
+                .arg("--no-recurse-submodules")
+                .stderr(Stdio::null())
+                .spawn()
                 .expect("failed to execute process");
         });
     }
@@ -84,7 +94,7 @@ fn build_prompt(repo: &Repository) {
 
     // return prompt
     if let Ok(serialized) = serde_json::to_string(&prompt) {
-        println!("{}", serialized);
+        println!("{serialized}");
     }
 }
 
@@ -143,7 +153,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
             *map.entry(status).or_insert(0) += 1;
         }
         for (k, v) in &map {
-            status.push(format!("{} {}", k, v));
+            status.push(format!("{k} {v}"));
         }
     }
     Ok(status.join(" "))
