@@ -1,3 +1,7 @@
+## 0.12
+
+- use VIRTUAL_ENV_PROMPT if set
+
 ## 0.11
 
 - env to modify character for ahead/behind `SLICK_PROMPT_GIT_REMOTE_AHEAD`, `SLICK_PROMPT_GIT_REMOTE_BEHIND`

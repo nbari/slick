@@ -41,7 +41,7 @@ pub fn display(matches: &ArgMatches) {
         .get_one("data")
         .map_or(String::new(), |s: &String| s.to_string());
     let deserialized: Prompt =
-        serde_json::from_str(&serialized).map_or_else(|_| Prompt::default(), |ok| ok);
+        serde_json::from_str(&serialized).unwrap_or_else(|_| Prompt::default());
 
     // get time elapsed
     let epochtime: u64 = matches
@@ -100,16 +100,20 @@ pub fn display(matches: &ArgMatches) {
 
     // PIPENV
     if !get_env("PIPENV_ACTIVE").is_empty() || !get_env("VIRTUAL_ENV").is_empty() {
-        let venv = get_env("VIRTUAL_ENV")
-            .split('/')
-            .last()
-            .map_or_else(String::new, |s| {
-                if get_env("PIPENV_ACTIVE").is_empty() {
-                    s.to_string()
-                } else {
-                    s.split('-').next().unwrap_or("").to_string()
-                }
-            });
+        // Check if env VIRTUAL_ENV_PROMPT if set else use VIRTUAL_ENV
+        let venv = env::var("VIRTUAL_ENV_PROMPT").unwrap_or_else(|_| {
+            get_env("VIRTUAL_ENV")
+                .split('/')
+                .last()
+                .map_or_else(String::new, |s| {
+                    if get_env("PIPENV_ACTIVE").is_empty() {
+                        s.to_string()
+                    } else {
+                        s.split('-').next().unwrap_or("").to_string()
+                    }
+                })
+        });
+
         if !venv.is_empty() {
             prompt.push(format!(
                 "%F{{{}}}({})",
