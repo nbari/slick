@@ -14,6 +14,10 @@ jobs:
   test:
     uses: ./.github/workflows/test.yml
 
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    secrets: inherit
+
   build:
     name: Build
     runs-on: ${{ matrix.os }}
@@ -25,11 +29,6 @@ jobs:
           - build: linux
             os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-
-          - build: macos
-            os: macos-latest
-            target: x86_64-apple-darwin
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,6 +47,12 @@ jobs:
       - run: sudo apt -y install musl-dev musl-tools
         if: matrix.build == 'linux'
 
-      - name: Build
-        run: |-
+      - name: Build Linux
+        run: |
           cargo build --release --locked --target ${{ matrix.target }} --features "openssl/vendored"
+        if: matrix.build == 'linux'
+
+      - name: Build
+        run: |
+          cargo build --release --locked --target ${{ matrix.target }}
+        if: matrix.build != 'linux'
