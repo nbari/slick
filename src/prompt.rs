@@ -18,6 +18,7 @@ struct Prompt {
     u_name: String,
 }
 
+// check if current user is root or not
 fn is_root() -> bool {
     let user = get_user_by_uid(get_current_uid()).unwrap();
     if user.uid() == 0 {
@@ -26,6 +27,7 @@ fn is_root() -> bool {
     false
 }
 
+// check if current user is remote or not
 fn is_remote() -> bool {
     env::var("SSH_CONNECTION").is_ok()
 }
