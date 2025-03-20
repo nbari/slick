@@ -1,12 +1,8 @@
 use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    env,
-    process::{Command, Stdio},
-    str, thread,
-};
+use std::{collections::BTreeMap, env, str};
+use tokio::process::Command;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -45,18 +41,31 @@ fn build_prompt(repo: &Repository) {
 
     // git fetch
     if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
-        thread::spawn(move || {
-            Command::new("git")
-                .env("GIT_TERMINAL_PROMPT", "0")
-                .arg("-c")
+        tokio::spawn(async move {
+            let mut cmd = Command::new("git");
+
+            cmd.env("GIT_TERMINAL_PROMPT", "0");
+
+            cmd.arg("-c")
                 .arg("gc.auto=0")
                 .arg("fetch")
                 .arg("--quiet")
                 .arg("--no-tags")
-                .arg("--no-recurse-submodules")
-                .stderr(Stdio::null())
-                .spawn()
-                .expect("failed to execute process");
+                .arg("--no-recurse-submodules");
+
+            match cmd.output().await {
+                Ok(output) => {
+                    if !output.status.success() {
+                        eprintln!(
+                            "error: failed to execute git fetch: {}",
+                            str::from_utf8(&output.stderr).unwrap()
+                        );
+                    }
+                }
+                Err(e) => {
+                    eprintln!("error: failed to execute git fetch: {}", e);
+                }
+            }
         });
     }
 

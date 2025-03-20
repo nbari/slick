@@ -1,7 +1,8 @@
 use clap::{Arg, Command};
 use slick::{precmd, prompt};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = Command::new("slick")
         .version(env!("CARGO_PKG_VERSION"))
         .subcommand_required(true)
