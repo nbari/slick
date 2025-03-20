@@ -1,3 +1,7 @@
+## 0.13
+
+- use tokio for async git status
+
 ## 0.12
 
 - use VIRTUAL_ENV_PROMPT if set
