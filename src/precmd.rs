@@ -15,10 +15,10 @@ struct Prompt {
 }
 
 pub fn render() {
-    if let Ok(path) = env::current_dir() {
-        if let Ok(repo) = Repository::discover(path) {
-            build_prompt(&repo);
-        }
+    if let Ok(path) = env::current_dir()
+        && let Ok(repo) = Repository::discover(path)
+    {
+        build_prompt(&repo);
     }
 }
 

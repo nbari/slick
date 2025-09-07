@@ -106,7 +106,7 @@ pub fn display(matches: &ArgMatches) {
         let venv = env::var("VIRTUAL_ENV_PROMPT").unwrap_or_else(|_| {
             get_env("VIRTUAL_ENV")
                 .split('/')
-                .last()
+                .next_back()
                 .map_or_else(String::new, |s| {
                     if get_env("PIPENV_ACTIVE").is_empty() {
                         s.to_string()
