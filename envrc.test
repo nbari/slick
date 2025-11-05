@@ -1,0 +1,13 @@
+# Test configuration for slick prompt tests
+# Used by test.sh to verify custom environment variables work
+
+export SLICK_PROMPT_SYMBOL="TEST>"
+export SLICK_PROMPT_VICMD_SYMBOL="TEST<"
+export SLICK_PROMPT_ROOT_SYMBOL="ROOT#"
+export SLICK_PROMPT_GIT_REMOTE_AHEAD="UP^"
+export SLICK_PROMPT_GIT_REMOTE_BEHIND="DOWN_"
+export SLICK_PROMPT_GIT_AUTH_SYMBOL="LOCK"
+export SLICK_PROMPT_ERROR_COLOR=red
+export SLICK_PROMPT_PATH_COLOR=blue
+export SLICK_PROMPT_GIT_BRANCH_COLOR=green
+export SLICK_PROMPT_GIT_FETCH=0

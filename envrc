@@ -1,24 +1,174 @@
-# test custom environment variables
+# Slick Prompt - All Environment Variables
+# ==========================================
+# Source this file to customize your prompt:
+#   source envrc
 #
-# source envrc
+# Or use direnv (https://direnv.net/):
+#   echo "source_env" > .envrc && direnv allow
 #
-export SLICK_PROMPT_CMD_MAX_EXEC_TIME=3
-export SLICK_PROMPT_ERROR_COLOR=88
-export SLICK_PROMPT_GIT_ACTION_COLOR=1
-export SLICK_PROMPT_GIT_BRANCH_COLOR=202
-export SLICK_PROMPT_GIT_FETCH=0
-export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=white
-export SLICK_PROMPT_GIT_REMOTE_COLOR=40
-export SLICK_PROMPT_GIT_REMOTE_AHEAD=""
-export SLICK_PROMPT_GIT_REMOTE_BEHIND=""
-export SLICK_PROMPT_GIT_STAGED_COLOR=1
-export SLICK_PROMPT_GIT_STATUS_COLOR=cyan
-export SLICK_PROMPT_PATH_COLOR=blue
-export SLICK_PROMPT_ROOT_COLOR=red
-export SLICK_PROMPT_ROOT_SYMBOL="*"
-export SLICK_PROMPT_SSH_COLOR=8
+# Uncomment and modify the values you want to customize
+
+# ==========================================
+# GENERAL SETTINGS
+# ==========================================
+
+# Maximum command execution time to display (seconds)
+# Default: 5
+export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5
+
+# Enable/disable git fetch (1=enable, 0=disable)
+# Default: 1
+# Disable for faster prompts in large repos or slow networks
+export SLICK_PROMPT_GIT_FETCH=1
+
+# Disable showing git user.name in prompt (1=disable, 0=show)
+# Default: 0 (show username)
+#export SLICK_PROMPT_NO_GIT_UNAME=0
+
+# Non-breaking space character
+# Default: \u{a0}
+#export SLICK_PROMPT_NON_BREAKING_SPACE=" "
+
+# ==========================================
+# PROMPT SYMBOLS
+# ==========================================
+
+# Main prompt symbol (normal mode)
+# Default: $
 export SLICK_PROMPT_SYMBOL="❯"
-export SLICK_PROMPT_SYMBOL_COLOR=magenta
-export SLICK_PROMPT_TIME_ELAPSED_COLOR=1
-export SLICK_PROMPT_VICMD_COLOR="yellow"
+
+# Vi command mode symbol
+# Default: >
 export SLICK_PROMPT_VICMD_SYMBOL="❮"
+
+# Root user symbol
+# Default: #
+export SLICK_PROMPT_ROOT_SYMBOL="#"
+
+# Git remote ahead symbol (commits to push)
+# Default: ⇡ (\u{21e1})
+export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"
+
+# Git remote behind symbol (commits to pull)
+# Default: ⇣ (\u{21e3})
+export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"
+
+# Git authentication failed symbol
+# Default: 🔒
+export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
+
+# ==========================================
+# COLORS (256-color palette or named colors)
+# ==========================================
+# Named colors: black, red, green, yellow, blue, magenta, cyan, white
+# Or use numbers: 0-255 from 256-color palette
+# See: https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
+
+# Error message color
+# Default: 196 (bright red)
+export SLICK_PROMPT_ERROR_COLOR=196
+
+# Path color
+# Default: 74 (cyan/teal)
+export SLICK_PROMPT_PATH_COLOR=74
+
+# Main symbol color
+# Default: 5 (magenta)
+export SLICK_PROMPT_SYMBOL_COLOR=magenta
+
+# Vi command mode color
+# Default: 3 (yellow)
+export SLICK_PROMPT_VICMD_COLOR=yellow
+
+# Root user color
+# Default: 1 (red)
+export SLICK_PROMPT_ROOT_COLOR=red
+
+# SSH session color
+# Default: 8 (gray)
+export SLICK_PROMPT_SSH_COLOR=8
+
+# Command execution time color
+# Default: 3 (yellow)
+export SLICK_PROMPT_TIME_ELAPSED_COLOR=3
+
+# ==========================================
+# GIT COLORS
+# ==========================================
+
+# Git branch name color
+# Default: 3 (yellow)
+export SLICK_PROMPT_GIT_BRANCH_COLOR=3
+
+# Git master/main branch color
+# Default: 160 (red)
+export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160
+
+# Git action color (merge, rebase, etc.)
+# Default: 3 (yellow)
+export SLICK_PROMPT_GIT_ACTION_COLOR=3
+
+# Git status color (modified, untracked files)
+# Default: 5 (magenta)
+export SLICK_PROMPT_GIT_STATUS_COLOR=5
+
+# Git staged files color
+# Default: 7 (gray/white)
+export SLICK_PROMPT_GIT_STAGED_COLOR=7
+
+# Git remote status color (ahead/behind)
+# Default: 6 (cyan)
+export SLICK_PROMPT_GIT_REMOTE_COLOR=6
+
+# Git user.name color
+# Default: 8 (gray)
+export SLICK_PROMPT_GIT_UNAME_COLOR=8
+
+# Git authentication failed color
+# Default: red
+export SLICK_PROMPT_GIT_AUTH_COLOR=red
+
+# ==========================================
+# EXAMPLE CONFIGURATIONS
+# ==========================================
+
+# Minimal/Fast Configuration (no git fetch, no username)
+#export SLICK_PROMPT_GIT_FETCH=0
+#export SLICK_PROMPT_NO_GIT_UNAME=1
+
+# Colorful Configuration
+#export SLICK_PROMPT_SYMBOL="➜"
+#export SLICK_PROMPT_SYMBOL_COLOR=cyan
+#export SLICK_PROMPT_PATH_COLOR=blue
+#export SLICK_PROMPT_GIT_BRANCH_COLOR=yellow
+#export SLICK_PROMPT_ERROR_COLOR=red
+
+# Simple Configuration (basic ASCII symbols)
+#export SLICK_PROMPT_SYMBOL=">"
+#export SLICK_PROMPT_VICMD_SYMBOL="<"
+#export SLICK_PROMPT_GIT_REMOTE_AHEAD="+"
+#export SLICK_PROMPT_GIT_REMOTE_BEHIND="-"
+#export SLICK_PROMPT_GIT_AUTH_SYMBOL="!"
+
+# Nerd Font Configuration
+# Requires a Nerd Font: https://www.nerdfonts.com/
+# Popular Nerd Fonts: Monoid Nerd Font, JetBrainsMono, FiraCode, Hack, UbuntuMono
+# Example symbols (uncomment to use):
+#export SLICK_PROMPT_SYMBOL="❯"         # Simple chevron (works with most fonts)
+#export SLICK_PROMPT_VICMD_SYMBOL="❮"    # Simple chevron left
+#export SLICK_PROMPT_ROOT_SYMBOL="⚡"     # Lightning bolt
+#export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"  # Lock symbol
+#export SLICK_PROMPT_GIT_REMOTE_AHEAD="⬆"  # Up arrow
+#export SLICK_PROMPT_GIT_REMOTE_BEHIND="⬇"  # Down arrow
+
+# Unicode Arrows Configuration (works without special fonts)
+#export SLICK_PROMPT_SYMBOL="→"      # U+2192
+#export SLICK_PROMPT_VICMD_SYMBOL="←"  # U+2190
+#export SLICK_PROMPT_GIT_REMOTE_AHEAD="↑"  # U+2191
+#export SLICK_PROMPT_GIT_REMOTE_BEHIND="↓"  # U+2193
+
+# Emoji Configuration
+#export SLICK_PROMPT_SYMBOL="🚀"
+#export SLICK_PROMPT_VICMD_SYMBOL="🔙"
+#export SLICK_PROMPT_ROOT_SYMBOL="👑"
+#export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔐"

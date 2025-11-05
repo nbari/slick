@@ -1,5 +1,34 @@
+# Run all tests
 test: clippy
-  cargo test
+    cargo test
+    ./test.sh
 
+# Run clippy with strict warnings
 clippy:
-  cargo clippy --all -- -W clippy::all -W clippy::nursery -D warnings
+    cargo clippy --all -- -W clippy::all -W clippy::nursery -D warnings
+
+# Build release binary
+build:
+    cargo build --release
+
+# Run all checks (test + format)
+check: clippy
+    cargo test
+    cargo fmt -- --check
+    ./test.sh
+
+# Format code
+fmt:
+    cargo fmt
+
+# Clean build artifacts
+clean:
+    cargo clean
+
+# Run integration tests only
+integration: build
+    ./test.sh
+
+# Show version
+version:
+    @cargo pkgid | cut -d# -f2

@@ -16,6 +16,7 @@ struct Prompt {
     staged: bool,
     status: String,
     u_name: String,
+    auth_failed: bool,
 }
 
 // check if current user is root or not
@@ -35,13 +36,13 @@ fn is_remote() -> bool {
 pub fn display(matches: &ArgMatches) {
     let keymap = matches
         .get_one("keymap")
-        .map_or("main".to_string(), |s: &String| s.to_string());
+        .map_or_else(|| "main".to_string(), |s: &String| s.to_string());
     let last_return_code = matches
         .get_one("last_return_code")
-        .map_or("0".to_string(), |s: &String| s.to_string());
+        .map_or_else(|| "0".to_string(), |s: &String| s.to_string());
     let serialized = matches
         .get_one("data")
-        .map_or(String::new(), |s: &String| s.to_string());
+        .map_or_else(String::new, |s: &String| s.to_string());
     let deserialized: Prompt =
         serde_json::from_str(&serialized).unwrap_or_else(|_| Prompt::default());
 
@@ -186,6 +187,15 @@ pub fn display(matches: &ArgMatches) {
         prompt.push(format!(
             "%F{{{}}}[staged]",
             get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
+        ));
+    }
+
+    // authentication failed warning
+    if deserialized.auth_failed {
+        prompt.push(format!(
+            "%F{{{}}}{}",
+            get_env("SLICK_PROMPT_GIT_AUTH_COLOR"),
+            get_env("SLICK_PROMPT_GIT_AUTH_SYMBOL")
         ));
     }
 

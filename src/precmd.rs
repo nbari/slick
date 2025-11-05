@@ -44,7 +44,10 @@ fn build_prompt(repo: &Repository) {
         tokio::spawn(async move {
             let mut cmd = Command::new("git");
 
-            cmd.env("GIT_TERMINAL_PROMPT", "0");
+            // Prevent any authentication prompts
+            cmd.env("GIT_TERMINAL_PROMPT", "0")
+                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes")
+                .env("GIT_ASKPASS", "true");
 
             cmd.arg("-c")
                 .arg("gc.auto=0")
@@ -114,7 +117,7 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
         .show(StatusShow::IndexAndWorkdir)
         .include_untracked(true)
         .include_unmodified(false)
-        .no_refresh(false);
+        .no_refresh(false); // Keep false to get real-time status
 
     let statuses = repo.statuses(Some(&mut status_opt))?;
     if !statuses.is_empty() {
