@@ -85,22 +85,52 @@ just version     # Show version
 
 ## Manual Testing
 
-### Test Auth Prompt Prevention
+### Test Auth Lock Detection
+
+The auth lock symbol (🔒) appears when SSH authentication is required:
 
 ```bash
 # Create repo with SSH remote that requires auth
-mkdir /tmp/test-auth && cd /tmp/test-auth
+mkdir /tmp/test-auth-lock && cd /tmp/test-auth-lock
 git init
 git config user.email "test@test.com"
-git config user.name "Test"
+git config user.name "Test User"
 echo "test" > file.txt
 git add . && git commit -m "init"
+git checkout -b main
 
-# Add private repo remote
-git remote add origin git@github.com:some-org/private-repo.git
+# Add private repo remote (one that requires SSH key)
+git remote add origin git@github.com:private-org/private-repo.git
+git config branch.main.remote origin
+git config branch.main.merge refs/heads/main
 
-# Should complete in < 5 seconds without prompting
-time slick precmd
+# First time: no lock (auth check runs in background)
+slick precmd
+# Output: {"auth_failed":false,...}
+
+# Wait a few seconds for background check
+sleep 4
+
+# Second time: lock appears! 🔒
+slick precmd
+# Output: {"auth_failed":true,...}
+
+# View full prompt with lock symbol
+DATA=$(slick precmd)
+slick prompt -d "$DATA" -r 0
+# Shows: ... main 🔒 ...
+```
+
+**How it works:**
+1. First `cd` into repo: auth check runs asynchronously in background
+2. Background check tests SSH connection with `ssh -o BatchMode=yes`  
+3. Result cached in `~/.cache/slick/auth_*` for 5 minutes
+4. Next prompt: reads cache and displays lock if auth is required
+
+**Cache location:**
+```bash
+ls -la ~/.cache/slick/
+cat ~/.cache/slick/auth_*  # timestamp:status (1=auth required)
 ```
 
 ### Test Timeout Protection

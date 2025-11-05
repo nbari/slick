@@ -197,6 +197,33 @@ These symbols work with any Nerd Font (Monoid, JetBrainsMono, FiraCode, Hack, et
 
 See more examples in [envrc](envrc).
 
+## 🔒 SSH Authentication Detection
+
+Slick automatically detects when SSH remotes require authentication and displays a lock symbol (🔒).
+
+**How it works:**
+- Non-blocking: First time you `cd` into a repo, auth check runs in background
+- Subsequent prompts show the lock symbol if SSH authentication is required
+- Cache-based: Auth status is cached for 5 minutes in `~/.cache/slick/`
+- Only checks SSH remotes (`git@` and `ssh://`) with 2-second timeout
+- No hanging or password prompts - completely non-interactive
+
+**Example:**
+```bash
+# cd into repo with SSH remote requiring auth
+cd my-private-repo
+# First prompt: no lock (background check running)
+# Next prompt: 🔒 appears if auth is needed
+```
+
+Configure the lock symbol:
+```bash
+export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"  # Default
+export SLICK_PROMPT_GIT_AUTH_COLOR=red     # Default
+```
+
+See [TEST_README.md](TEST_README.md#test-auth-lock-detection) for testing instructions.
+
 ___
 Inspired by:
 

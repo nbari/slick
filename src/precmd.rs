@@ -1,8 +1,14 @@
 use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, env, str};
-use tokio::process::Command;
+use std::{
+    collections::BTreeMap,
+    env, fs,
+    path::PathBuf,
+    process::Command,
+    str,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -12,6 +18,7 @@ struct Prompt {
     staged: bool,
     status: String,
     u_name: String,
+    auth_failed: bool,
 }
 
 pub fn render() {
@@ -25,6 +32,7 @@ pub fn render() {
 fn build_prompt(repo: &Repository) {
     let mut prompt = Prompt::default();
 
+    // ===== SYNCHRONOUS PART (instant display) =====
     // get user.name
     if let Ok(config) = repo.config() {
         prompt.u_name = config
@@ -39,39 +47,56 @@ fn build_prompt(repo: &Repository) {
         prompt.branch = "(no branch)".into();
     }
 
-    // git fetch
+    // Check for cached auth status (synchronous, fast)
+    prompt.auth_failed = read_auth_status(repo);
+
+    // git fetch and auth check (truly async, fire-and-forget)
     if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
-        tokio::spawn(async move {
-            let mut cmd = Command::new("git");
+        let cache_path = get_auth_cache_path(repo);
 
-            // Prevent any authentication prompts
-            cmd.env("GIT_TERMINAL_PROMPT", "0")
-                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes")
-                .env("GIT_ASKPASS", "true");
+        // Git fetch (detached) - also check for auth errors
+        if let Some(cache) = cache_path {
+            let cache_str = cache.to_string_lossy().to_string();
 
-            cmd.arg("-c")
-                .arg("gc.auto=0")
-                .arg("fetch")
-                .arg("--quiet")
-                .arg("--no-tags")
-                .arg("--no-recurse-submodules");
-
-            match cmd.output().await {
-                Ok(output) => {
-                    if !output.status.success() {
-                        eprintln!(
-                            "error: failed to execute git fetch: {}",
-                            str::from_utf8(&output.stderr).unwrap()
-                        );
-                    }
-                }
-                Err(e) => {
-                    eprintln!("error: failed to execute git fetch: {}", e);
-                }
+            // Create cache directory
+            if let Some(parent) = cache.parent() {
+                let _ = fs::create_dir_all(parent);
             }
-        });
+
+            let _ = Command::new("sh")
+                .arg("-c")
+                .arg(format!(
+                    r#"(
+                        stderr=$(timeout 5 git -c gc.auto=0 fetch --quiet --no-tags --no-recurse-submodules 2>&1)
+                        exit_code=$?
+                        if [ $exit_code -eq 0 ]; then
+                            echo "$(date +%s):0" > {}
+                        elif [ $exit_code -eq 124 ]; then
+                            # Timeout - likely auth issue
+                            echo "$(date +%s):1" > {}
+                        elif echo "$stderr" | grep -qiE "(permission denied|authentication failed|could not read|repository not found|access denied)"; then
+                            echo "$(date +%s):1" > {}
+                        fi
+                    ) >/dev/null 2>&1 &"#,
+                    cache_str, cache_str, cache_str
+                ))
+                .env("GIT_TERMINAL_PROMPT", "0")
+                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ControlMaster=no")
+                .env("GIT_ASKPASS", "true")
+                .spawn();
+        } else {
+            // Fallback to simple fetch if no cache path
+            let _ = Command::new("sh")
+                .arg("-c")
+                .arg("(timeout 5 git -c gc.auto=0 fetch --quiet --no-tags --no-recurse-submodules >/dev/null 2>&1) &")
+                .env("GIT_TERMINAL_PROMPT", "0")
+                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ControlMaster=no")
+                .env("GIT_ASKPASS", "true")
+                .spawn();
+        }
     }
 
+    // ===== SYNCHRONOUS GIT STATUS (for real-time repo state) =====
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
@@ -169,6 +194,40 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
         }
     }
     Ok(status.join(" "))
+}
+
+fn get_auth_cache_path(repo: &Repository) -> Option<PathBuf> {
+    let repo_path = repo.path().to_str()?;
+    let cache_dir = env::var("XDG_CACHE_HOME")
+        .or_else(|_| env::var("HOME").map(|h| format!("{}/.cache", h)))
+        .ok()?;
+
+    // Create a hash of the repo path for the cache filename
+    let hash = repo_path
+        .bytes()
+        .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
+
+    let cache_path = PathBuf::from(cache_dir).join("slick");
+    Some(cache_path.join(format!("auth_{:x}", hash)))
+}
+
+fn read_auth_status(repo: &Repository) -> bool {
+    if let Some(cache_path) = get_auth_cache_path(repo)
+        && let Ok(content) = fs::read_to_string(&cache_path)
+        && let Some((ts_str, status)) = content.split_once(':')
+        && let Ok(cached_time) = ts_str.parse::<u64>()
+    {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+
+        // Cache valid for 5 minutes
+        if now - cached_time < 300 {
+            return status.trim() == "1";
+        }
+    }
+    false
 }
 
 fn get_action(repo: &Repository) -> Option<String> {
