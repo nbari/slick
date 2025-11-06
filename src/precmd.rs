@@ -2,13 +2,28 @@ use crate::get_env;
 use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
-    env, fs,
+    collections::HashMap,
+    env,
+    fmt::Write as _,
+    fs,
     path::PathBuf,
     str,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 use tokio::{process::Command, time::timeout};
+
+// Git action constants to avoid repeated string allocations
+const ACTION_REBASE: &str = "rebase";
+const ACTION_AM: &str = "am";
+const ACTION_AM_REBASE: &str = "am/rebase";
+const ACTION_REBASE_I: &str = "rebase-i";
+const ACTION_REBASE_M: &str = "rebase-m";
+const ACTION_MERGE: &str = "merge";
+const ACTION_BISECT: &str = "bisect";
+const ACTION_CHERRY_SEQ: &str = "cherry-seq";
+const ACTION_CHERRY: &str = "cherry";
+const ACTION_CHERRY_OR_REVERT: &str = "cherry-or-revert";
+const NO_BRANCH: &str = "(no branch)";
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -41,9 +56,9 @@ fn build_prompt(repo: &Repository) {
 
     // get branch
     if let Ok(head) = repo.head() {
-        prompt.branch = head.shorthand().unwrap_or("(no branch)").to_string();
+        prompt.branch = head.shorthand().unwrap_or(NO_BRANCH).to_string();
     } else {
-        prompt.branch = "(no branch)".into();
+        prompt.branch = NO_BRANCH.into();
     }
 
     // Check for cached auth status (synchronous, fast)
@@ -90,13 +105,13 @@ fn build_prompt(repo: &Repository) {
                         if output.status.success() {
                             false
                         } else {
-                            // Check stderr for auth-related errors
-                            let stderr = String::from_utf8_lossy(&output.stderr);
-                            stderr.to_lowercase().contains("permission denied")
-                                || stderr.to_lowercase().contains("authentication failed")
-                                || stderr.to_lowercase().contains("could not read")
-                                || stderr.to_lowercase().contains("repository not found")
-                                || stderr.to_lowercase().contains("access denied")
+                            // Check stderr for auth-related errors (convert to lowercase once)
+                            let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+                            stderr.contains("permission denied")
+                                || stderr.contains("authentication failed")
+                                || stderr.contains("could not read")
+                                || stderr.contains("repository not found")
+                                || stderr.contains("access denied")
                         }
                     }
                     Ok(Err(_)) | Err(_) => true, // Command error or timeout
@@ -111,18 +126,14 @@ fn build_prompt(repo: &Repository) {
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
-        prompt.remote.push(format!(
-            "{}{}",
-            get_env("SLICK_PROMPT_GIT_REMOTE_BEHIND"),
-            behind
-        ));
+        let mut s = String::with_capacity(8);
+        write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_BEHIND"), behind).unwrap();
+        prompt.remote.push(s);
     }
     if ahead > 0 {
-        prompt.remote.push(format!(
-            "{}{}",
-            get_env("SLICK_PROMPT_GIT_REMOTE_AHEAD"),
-            ahead
-        ));
+        let mut s = String::with_capacity(8);
+        write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_AHEAD"), ahead).unwrap();
+        prompt.remote.push(s);
     }
 
     // git action
@@ -147,7 +158,8 @@ fn build_prompt(repo: &Repository) {
 }
 
 fn get_status(repo: &Repository) -> Result<String, Error> {
-    let mut status: Vec<String> = Vec::new();
+    // Pre-allocate with estimated capacity for common status types
+    let mut status: Vec<String> = Vec::with_capacity(8);
     let mut status_opt = StatusOptions::new();
     status_opt
         .show(StatusShow::IndexAndWorkdir)
@@ -157,7 +169,8 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
 
     let statuses = repo.statuses(Some(&mut status_opt))?;
     if !statuses.is_empty() {
-        let mut map: BTreeMap<&str, u32> = BTreeMap::new();
+        // Use HashMap for O(1) operations instead of BTreeMap's O(log n)
+        let mut map: HashMap<&str, u32> = HashMap::new();
         for entry in statuses.iter() {
             // println!("{:#?}, {:#?}", entry.path(), entry.status());
             let status = match entry.status() {
@@ -201,7 +214,9 @@ fn get_status(repo: &Repository) -> Result<String, Error> {
             *map.entry(status).or_insert(0) += 1;
         }
         for (k, v) in &map {
-            status.push(format!("{k} {v}"));
+            let mut s = String::with_capacity(8);
+            write!(s, "{k} {v}").unwrap();
+            status.push(s);
         }
     }
     Ok(status.join(" "))
@@ -250,13 +265,13 @@ fn get_action(repo: &Repository) -> Option<String> {
         gitdir.join("..").join(".dotest"),
     ] {
         if tmp.join("rebasing").exists() {
-            return Some("rebase".to_string());
+            return Some(ACTION_REBASE.to_string());
         }
         if tmp.join("applying").exists() {
-            return Some("am".to_string());
+            return Some(ACTION_AM.to_string());
         }
         if tmp.exists() {
-            return Some("am/rebase".to_string());
+            return Some(ACTION_AM_REBASE.to_string());
         }
     }
 
@@ -265,33 +280,33 @@ fn get_action(repo: &Repository) -> Option<String> {
         gitdir.join(".dotest-merge").join("interactive"),
     ] {
         if tmp.exists() {
-            return Some("rebase-i".to_string());
+            return Some(ACTION_REBASE_I.to_string());
         }
     }
 
     for tmp in &[gitdir.join("rebase-merge"), gitdir.join(".dotest-merge")] {
         if tmp.exists() {
-            return Some("rebase-m".to_string());
+            return Some(ACTION_REBASE_M.to_string());
         }
     }
 
     if gitdir.join("MERGE_HEAD").exists() {
-        return Some("merge".to_string());
+        return Some(ACTION_MERGE.to_string());
     }
 
     if gitdir.join("BISECT_LOG").exists() {
-        return Some("bisect".to_string());
+        return Some(ACTION_BISECT.to_string());
     }
 
     if gitdir.join("CHERRY_PICK_HEAD").exists() {
         if gitdir.join("sequencer").exists() {
-            return Some("cherry-seq".to_string());
+            return Some(ACTION_CHERRY_SEQ.to_string());
         }
-        return Some("cherry".to_string());
+        return Some(ACTION_CHERRY.to_string());
     }
 
     if gitdir.join("sequencer").exists() {
-        return Some("cherry-or-revert".to_string());
+        return Some(ACTION_CHERRY_OR_REVERT.to_string());
     }
 
     None

@@ -80,40 +80,47 @@ impl EnvDefaults {
 }
 
 #[must_use]
-pub fn get_env(e: &str) -> String {
+pub fn get_env(e: &str) -> &str {
     let cache = ENV_CACHE.get_or_init(EnvDefaults::new);
 
     match e {
-        "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => cache.cmd_max_exec_time.clone(),
-        "SLICK_PROMPT_ERROR_COLOR" => cache.error_color.clone(),
-        "SLICK_PROMPT_GIT_ACTION_COLOR" => cache.git_action_color.clone(),
-        "SLICK_PROMPT_GIT_AUTH_COLOR" => cache.git_auth_color.clone(),
-        "SLICK_PROMPT_GIT_AUTH_SYMBOL" => cache.git_auth_symbol.clone(),
-        "SLICK_PROMPT_GIT_BRANCH_COLOR" => cache.git_branch_color.clone(),
-        "SLICK_PROMPT_GIT_FETCH" => cache.git_fetch.clone(),
-        "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => cache.git_master_branch_color.clone(),
-        "SLICK_PROMPT_GIT_REMOTE_COLOR" => cache.git_remote_color.clone(),
-        "SLICK_PROMPT_GIT_REMOTE_AHEAD" => cache.git_remote_ahead.clone(),
-        "SLICK_PROMPT_GIT_REMOTE_BEHIND" => cache.git_remote_behind.clone(),
-        "SLICK_PROMPT_GIT_STAGED_COLOR" => cache.git_staged_color.clone(),
-        "SLICK_PROMPT_GIT_STATUS_COLOR" => cache.git_status_color.clone(),
-        "SLICK_PROMPT_GIT_UNAME_COLOR" => cache.git_uname_color.clone(),
-        "SLICK_PROMPT_NON_BREAKING_SPACE" => cache.non_breaking_space.clone(),
-        "SLICK_PROMPT_PATH_COLOR" => cache.path_color.clone(),
-        "SLICK_PROMPT_ROOT_COLOR" => cache.root_color.clone(),
-        "SLICK_PROMPT_ROOT_SYMBOL" => cache.root_symbol.clone(),
-        "SLICK_PROMPT_SSH_COLOR" => cache.ssh_color.clone(),
-        "SLICK_PROMPT_SYMBOL" => cache.symbol.clone(),
-        "SLICK_PROMPT_SYMBOL_COLOR" => cache.symbol_color.clone(),
-        "SLICK_PROMPT_TIME_ELAPSED_COLOR" => cache.time_elapsed_color.clone(),
-        "SLICK_PROMPT_VICMD_COLOR" => cache.vicmd_color.clone(),
-        "SLICK_PROMPT_VICMD_SYMBOL" => cache.vicmd_symbol.clone(),
-        "SLICK_PROMPT_NO_GIT_UNAME" => env::var(e).unwrap_or_default(),
-        "PIPENV_ACTIVE" => env::var(e).unwrap_or_default(),
-        "PIPENV_ACTIVE_COLOR" => env::var(e).unwrap_or_else(|_| "7".into()),
-        "VIRTUAL_ENV" => env::var(e).unwrap_or_default(),
-        _ => "??".into(),
+        "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => &cache.cmd_max_exec_time,
+        "SLICK_PROMPT_ERROR_COLOR" => &cache.error_color,
+        "SLICK_PROMPT_GIT_ACTION_COLOR" => &cache.git_action_color,
+        "SLICK_PROMPT_GIT_AUTH_COLOR" => &cache.git_auth_color,
+        "SLICK_PROMPT_GIT_AUTH_SYMBOL" => &cache.git_auth_symbol,
+        "SLICK_PROMPT_GIT_BRANCH_COLOR" => &cache.git_branch_color,
+        "SLICK_PROMPT_GIT_FETCH" => &cache.git_fetch,
+        "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => &cache.git_master_branch_color,
+        "SLICK_PROMPT_GIT_REMOTE_COLOR" => &cache.git_remote_color,
+        "SLICK_PROMPT_GIT_REMOTE_AHEAD" => &cache.git_remote_ahead,
+        "SLICK_PROMPT_GIT_REMOTE_BEHIND" => &cache.git_remote_behind,
+        "SLICK_PROMPT_GIT_STAGED_COLOR" => &cache.git_staged_color,
+        "SLICK_PROMPT_GIT_STATUS_COLOR" => &cache.git_status_color,
+        "SLICK_PROMPT_GIT_UNAME_COLOR" => &cache.git_uname_color,
+        "SLICK_PROMPT_NON_BREAKING_SPACE" => &cache.non_breaking_space,
+        "SLICK_PROMPT_PATH_COLOR" => &cache.path_color,
+        "SLICK_PROMPT_ROOT_COLOR" => &cache.root_color,
+        "SLICK_PROMPT_ROOT_SYMBOL" => &cache.root_symbol,
+        "SLICK_PROMPT_SSH_COLOR" => &cache.ssh_color,
+        "SLICK_PROMPT_SYMBOL" => &cache.symbol,
+        "SLICK_PROMPT_SYMBOL_COLOR" => &cache.symbol_color,
+        "SLICK_PROMPT_TIME_ELAPSED_COLOR" => &cache.time_elapsed_color,
+        "SLICK_PROMPT_VICMD_COLOR" => &cache.vicmd_color,
+        "SLICK_PROMPT_VICMD_SYMBOL" => &cache.vicmd_symbol,
+        _ => "??",
     }
+}
+
+// For environment variables that aren't cached in EnvDefaults, use this function
+#[must_use]
+pub fn get_env_var(e: &str) -> String {
+    env::var(e).unwrap_or_default()
+}
+
+#[must_use]
+pub fn get_env_var_or(e: &str, default: &str) -> String {
+    env::var(e).unwrap_or_else(|_| default.to_owned())
 }
 
 #[cfg(test)]
@@ -136,5 +143,19 @@ mod tests {
     #[test]
     fn test_get_env_unknown_returns_question_marks() {
         assert_eq!(get_env("UNKNOWN_VAR"), "??");
+    }
+
+    #[test]
+    fn test_get_env_var_returns_empty_for_missing() {
+        // Test with an env var that's unlikely to be set
+        assert_eq!(get_env_var("UNLIKELY_TO_EXIST_VAR_12345"), "");
+    }
+
+    #[test]
+    fn test_get_env_var_or_returns_default() {
+        assert_eq!(
+            get_env_var_or("UNLIKELY_TO_EXIST_VAR_12345", "default"),
+            "default"
+        );
     }
 }

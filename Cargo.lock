@@ -606,7 +606,7 @@ dependencies = [
 
 [[package]]
 name = "slick"
-version = "0.14.2"
+version = "0.14.3"
 dependencies = [
  "clap",
  "compound_duration",

@@ -1,8 +1,9 @@
-use crate::get_env;
+use crate::{get_env, get_env_var, get_env_var_or};
 use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::{
     env,
+    fmt::Write as _,
     process::exit,
     time::{Duration, SystemTime},
 };
@@ -21,11 +22,9 @@ struct Prompt {
 
 // check if current user is root or not
 fn is_root() -> bool {
-    let user = get_user_by_uid(get_current_uid()).unwrap();
-    if user.uid() == 0 {
-        return true;
-    }
-    false
+    get_user_by_uid(get_current_uid())
+        .map(|user| user.uid() == 0)
+        .unwrap_or(false)
 }
 
 // check if current user is remote or not
@@ -66,137 +65,177 @@ pub fn display(matches: &ArgMatches) {
     let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
     let time_elapsed = d.elapsed().map_or(0, |elapsed| elapsed.as_secs());
 
+    // Cache frequently used values
+    let is_root_user = is_root();
+    let is_remote_user = is_remote();
+    let vicmd_symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
+
     // define symbol
     let symbol = if keymap == "vicmd" {
-        get_env("SLICK_PROMPT_VICMD_SYMBOL")
-    } else if is_root() {
+        vicmd_symbol
+    } else if is_root_user {
         get_env("SLICK_PROMPT_ROOT_SYMBOL")
     } else {
         get_env("SLICK_PROMPT_SYMBOL")
     };
 
     // symbol color
-    let mut prompt_symbol_color = get_env("SLICK_PROMPT_ERROR_COLOR");
-    if symbol == get_env("SLICK_PROMPT_VICMD_SYMBOL") {
-        prompt_symbol_color = get_env("SLICK_PROMPT_VICMD_COLOR");
+    let prompt_symbol_color = if symbol == vicmd_symbol {
+        get_env("SLICK_PROMPT_VICMD_COLOR")
     } else if last_return_code == "0" {
-        prompt_symbol_color = get_env("SLICK_PROMPT_SYMBOL_COLOR");
-    }
+        get_env("SLICK_PROMPT_SYMBOL_COLOR")
+    } else {
+        get_env("SLICK_PROMPT_ERROR_COLOR")
+    };
 
-    let mut prompt: Vec<String> = Vec::new();
+    // Use String builder instead of Vec for better performance
+    // Estimate capacity: ~200 chars is typical for a prompt
+    let mut prompt = String::with_capacity(256);
 
-    if is_remote() {
-        if is_root() {
+    if is_remote_user {
+        if is_root_user {
             // prefix with "root" if UID = 0
-            prompt.push(format!(
-                "%F{{{}}}%n%F{{{}}}@%m",
+            write!(
+                prompt,
+                "%F{{{}}}%n%F{{{}}}@%m ",
                 get_env("SLICK_PROMPT_ROOT_COLOR"),
                 get_env("SLICK_PROMPT_SSH_COLOR")
-            ));
+            )
+            .unwrap();
         } else {
-            prompt.push(format!("%F{{{}}}%n@%m", get_env("SLICK_PROMPT_SSH_COLOR")));
+            write!(prompt, "%F{{{}}}%n@%m ", get_env("SLICK_PROMPT_SSH_COLOR")).unwrap();
         }
-    } else if is_root() {
+    } else if is_root_user {
         // prefix with "root" if UID = 0
-        prompt.push(format!("%F{{{}}}%n", get_env("SLICK_PROMPT_ROOT_COLOR")));
+        write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR")).unwrap();
     }
 
-    // PIPENV
-    if !get_env("PIPENV_ACTIVE").is_empty() || !get_env("VIRTUAL_ENV").is_empty() {
+    // PIPENV - optimized with rsplit_once
+    let pipenv_active = get_env_var("PIPENV_ACTIVE");
+    let virtual_env = get_env_var("VIRTUAL_ENV");
+    if !pipenv_active.is_empty() || !virtual_env.is_empty() {
         // Check if env VIRTUAL_ENV_PROMPT if set else use VIRTUAL_ENV
         let venv = env::var("VIRTUAL_ENV_PROMPT").unwrap_or_else(|_| {
-            get_env("VIRTUAL_ENV")
-                .split('/')
-                .next_back()
-                .map_or_else(String::new, |s| {
-                    if get_env("PIPENV_ACTIVE").is_empty() {
-                        s.to_string()
-                    } else {
-                        s.split('-').next().unwrap_or("").to_string()
-                    }
-                })
+            // Use rsplit_once for better performance
+            if let Some((_, last)) = virtual_env.rsplit_once('/') {
+                if pipenv_active.is_empty() {
+                    last.to_string()
+                } else {
+                    // Get first part before '-' for pipenv
+                    last.split_once('-')
+                        .map_or(last, |(first, _)| first)
+                        .to_string()
+                }
+            } else {
+                String::new()
+            }
         });
 
         if !venv.is_empty() {
-            prompt.push(format!(
-                "%F{{{}}}({})",
-                get_env("PIPENV_ACTIVE_COLOR"),
+            write!(
+                prompt,
+                "%F{{{}}}({}) ",
+                get_env_var_or("PIPENV_ACTIVE_COLOR", "7"),
                 venv
-            ));
+            )
+            .unwrap();
         }
     }
 
     // git u_name
-    if get_env("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
-        prompt.push(format!(
+    if get_env_var("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
+        write!(
+            prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_UNAME_COLOR"),
             deserialized.u_name
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // start the prompt with the current dir %~
-    prompt.push(format!("%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR")));
+    write!(prompt, "%F{{{}}}%~ ", get_env("SLICK_PROMPT_PATH_COLOR")).unwrap();
 
     // branch
     if !deserialized.branch.is_empty() {
         if deserialized.branch == "master" || deserialized.branch == "main" {
-            prompt.push(format!(
+            write!(
+                prompt,
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
                 deserialized.branch
-            ));
+            )
+            .unwrap();
         } else {
-            prompt.push(format!(
+            write!(
+                prompt,
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
                 deserialized.branch
-            ));
+            )
+            .unwrap();
         }
+        prompt.push(' ');
     }
 
     // git status
     if !deserialized.status.is_empty() {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}[{}]",
             get_env("SLICK_PROMPT_GIT_STATUS_COLOR"),
             deserialized.status
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // git remote
     if !deserialized.remote.is_empty() {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_COLOR"),
             deserialized.remote.join(" ")
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // git action
     if !deserialized.action.is_empty() {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_ACTION_COLOR"),
             deserialized.action
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // git staged
     if deserialized.staged {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}[staged]",
             get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // authentication failed warning
     if deserialized.auth_failed {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_AUTH_COLOR"),
             get_env("SLICK_PROMPT_GIT_AUTH_SYMBOL")
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
     }
 
     // time elapsed
@@ -204,20 +243,30 @@ pub fn display(matches: &ArgMatches) {
         .parse()
         .unwrap_or(5);
     if time_elapsed > max_time {
-        prompt.push(format!(
+        write!(
+            prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
             compound_duration::format_dhms(time_elapsed)
-        ));
+        )
+        .unwrap();
+        prompt.push(' ');
+    }
+
+    // Remove trailing space if present
+    if prompt.ends_with(' ') {
+        prompt.pop();
     }
 
     // second prompt line
-    prompt.push(format!(
+    write!(
+        prompt,
         "\n%F{{{}}}{}%f{}",
         prompt_symbol_color,
         symbol,
         get_env("SLICK_PROMPT_NON_BREAKING_SPACE"),
-    ));
+    )
+    .unwrap();
 
-    print!("{}", prompt.join(" "));
+    print!("{prompt}");
 }

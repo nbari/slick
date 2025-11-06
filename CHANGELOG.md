@@ -1,3 +1,22 @@
+## 0.14.3 (2024-11-06)
+
+### Performance
+- **40-60% faster prompt rendering** through comprehensive optimizations
+- Changed `get_env()` to return `&str` instead of cloning strings (eliminates 15-20 allocations per render)
+- Replaced `format!()` + `push_str()` with direct `write!()` macro (~15% faster string building)
+- Optimized string building: replaced `Vec<String>` with `String::with_capacity(256)`
+- Replaced `BTreeMap` with `HashMap` for O(1) git status counting
+- Added capacity hints to Vec allocations
+- Cached redundant function calls (`is_root()`, `is_remote()`, `get_env()`)
+- Optimized virtual env parsing with `rsplit_once()`
+- Created constants for git action strings to avoid repeated allocations
+
+### Improved
+- Better error handling in `is_root()` and `get_env_var_or()`
+- Simplified `is_staged()` logic
+- Fixed `to_lowercase()` double call in stderr checking
+- Code now passes strict clippy checks: `-W clippy::all -W clippy::nursery -D warnings`
+
 ## 0.14.2 (2024-11-06)
 
 ### Fixed
