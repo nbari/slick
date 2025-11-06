@@ -10,6 +10,7 @@ use std::{
 use users::{get_current_uid, get_user_by_uid};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
 struct Prompt {
     action: String,
     branch: String,
@@ -22,9 +23,7 @@ struct Prompt {
 
 // check if current user is root or not
 fn is_root() -> bool {
-    get_user_by_uid(get_current_uid())
-        .map(|user| user.uid() == 0)
-        .unwrap_or(false)
+    get_user_by_uid(get_current_uid()).is_some_and(|user| user.uid() == 0)
 }
 
 // check if current user is remote or not
@@ -32,23 +31,24 @@ fn is_remote() -> bool {
     env::var("SSH_CONNECTION").is_ok()
 }
 
+#[allow(clippy::too_many_lines)]
 pub fn display(matches: &ArgMatches) {
     let keymap = matches
         .get_one("keymap")
-        .map_or_else(|| "main".to_string(), |s: &String| s.to_string());
+        .map_or_else(|| "main".to_string(), String::clone);
     let last_return_code = matches
         .get_one("last_return_code")
-        .map_or_else(|| "0".to_string(), |s: &String| s.to_string());
+        .map_or_else(|| "0".to_string(), String::clone);
     let serialized = matches
         .get_one("data")
-        .map_or_else(String::new, |s: &String| s.to_string());
+        .map_or_else(String::new, String::clone);
     let deserialized: Prompt =
         serde_json::from_str(&serialized).unwrap_or_else(|_| Prompt::default());
 
     // get time elapsed
     let epochtime: u64 = matches
         .get_one("time")
-        .map_or(String::new(), |s: &String| s.to_string())
+        .map_or(String::new(), String::clone)
         .parse::<u64>()
         .ok()
         .map_or_else(
@@ -95,19 +95,19 @@ pub fn display(matches: &ArgMatches) {
     if is_remote_user {
         if is_root_user {
             // prefix with "root" if UID = 0
-            write!(
+            // Writing to String never fails - ignore result
+            let _ = write!(
                 prompt,
                 "%F{{{}}}%n%F{{{}}}@%m ",
                 get_env("SLICK_PROMPT_ROOT_COLOR"),
                 get_env("SLICK_PROMPT_SSH_COLOR")
-            )
-            .unwrap();
+            );
         } else {
-            write!(prompt, "%F{{{}}}%n@%m ", get_env("SLICK_PROMPT_SSH_COLOR")).unwrap();
+            let _ = write!(prompt, "%F{{{}}}%n@%m ", get_env("SLICK_PROMPT_SSH_COLOR"));
         }
     } else if is_root_user {
         // prefix with "root" if UID = 0
-        write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR")).unwrap();
+        let _ = write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR"));
     }
 
     // PIPENV - optimized with rsplit_once
@@ -132,109 +132,100 @@ pub fn display(matches: &ArgMatches) {
         });
 
         if !venv.is_empty() {
-            write!(
+            let _ = write!(
                 prompt,
                 "%F{{{}}}({}) ",
                 get_env_var_or("PIPENV_ACTIVE_COLOR", "7"),
                 venv
-            )
-            .unwrap();
+            );
         }
     }
 
-    // git u_name
+    // git u_name (before path for consistency with zpty single-render mode)
     if get_env_var("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_UNAME_COLOR"),
             deserialized.u_name
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
-    // start the prompt with the current dir %~
-    write!(prompt, "%F{{{}}}%~ ", get_env("SLICK_PROMPT_PATH_COLOR")).unwrap();
+    // current dir %~ (after u_name)
+    let _ = write!(prompt, "%F{{{}}}%~ ", get_env("SLICK_PROMPT_PATH_COLOR"));
 
     // branch
     if !deserialized.branch.is_empty() {
         if deserialized.branch == "master" || deserialized.branch == "main" {
-            write!(
+            let _ = write!(
                 prompt,
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
                 deserialized.branch
-            )
-            .unwrap();
+            );
         } else {
-            write!(
+            let _ = write!(
                 prompt,
                 "%F{{{}}}{}",
                 get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
                 deserialized.branch
-            )
-            .unwrap();
+            );
         }
         prompt.push(' ');
     }
 
     // git status
     if !deserialized.status.is_empty() {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}[{}]",
             get_env("SLICK_PROMPT_GIT_STATUS_COLOR"),
             deserialized.status
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
     // git remote
     if !deserialized.remote.is_empty() {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_REMOTE_COLOR"),
             deserialized.remote.join(" ")
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
     // git action
     if !deserialized.action.is_empty() {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_ACTION_COLOR"),
             deserialized.action
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
     // git staged
     if deserialized.staged {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}[staged]",
             get_env("SLICK_PROMPT_GIT_STAGED_COLOR"),
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
     // authentication failed warning
     if deserialized.auth_failed {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_GIT_AUTH_COLOR"),
             get_env("SLICK_PROMPT_GIT_AUTH_SYMBOL")
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
@@ -243,13 +234,12 @@ pub fn display(matches: &ArgMatches) {
         .parse()
         .unwrap_or(5);
     if time_elapsed > max_time {
-        write!(
+        let _ = write!(
             prompt,
             "%F{{{}}}{}",
             get_env("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
             compound_duration::format_dhms(time_elapsed)
-        )
-        .unwrap();
+        );
         prompt.push(' ');
     }
 
@@ -259,14 +249,13 @@ pub fn display(matches: &ArgMatches) {
     }
 
     // second prompt line
-    write!(
+    let _ = write!(
         prompt,
         "\n%F{{{}}}{}%f{}",
         prompt_symbol_color,
         symbol,
         get_env("SLICK_PROMPT_NON_BREAKING_SPACE"),
-    )
-    .unwrap();
+    );
 
     print!("{prompt}");
 }

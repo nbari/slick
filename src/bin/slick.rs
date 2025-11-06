@@ -54,7 +54,7 @@ The default values are:
         .get_matches();
 
     match matches.subcommand() {
-        Some(("precmd", _)) => precmd::render(),
+        Some(("precmd", _)) => precmd::render().await,
         Some(("prompt", sub_m)) => prompt::display(sub_m),
         _ => (),
     }

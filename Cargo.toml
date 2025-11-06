@@ -1,6 +1,6 @@
 [package]
 name = "slick"
-version = "0.14.3"
+version = "0.14.4"
 authors = ["Nicolas Embriz <nbari@tequila.io>"]
 description = "async ZSH prompt"
 documentation = "https://github.com/nbari/slick/blob/master/README.md"
@@ -20,7 +20,7 @@ strip = true
 
 [dependencies]
 clap = "4"
-compound_duration = "1"
+compound_duration = "2"
 git2 = "0.20"
 openssl = { version = "0.10", optional = true, features = ["vendored"] }
 serde = { version = "1.0", features = ["derive"] }
@@ -30,3 +30,8 @@ users = "0.11"
 
 [dev-dependencies]
 tempfile = "3"
+criterion = "0.5"
+
+[[bench]]
+name = "prompt_bench"
+harness = false

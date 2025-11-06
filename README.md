@@ -19,18 +19,38 @@ If in Linux you may need install this:
 
     apt install -y build-essential libssl-dev pkg-config
 
-check your PATH `$HOME/.cargo/bin/slick`:w
+check your PATH `$HOME/.cargo/bin/slick`
 
-Then add this to your `.zshrc`:
+### Quick Test (Development)
+
+For quick testing or development:
 
 ```sh
-zle -N zle-keymap-select
-zle -N zle-line-init
+# Build and test
+cargo build --release
+source load.zsh
+```
+
+The `load.zsh` script automatically detects the slick binary and sets up the prompt.
+
+### Production Setup
+
+Add this to your `.zshrc`:
+
+```sh
+# Load required modules
 zmodload zsh/datetime
 autoload -Uz add-zsh-hook
+
+# Register hooks
 add-zsh-hook precmd slick_prompt_precmd
 add-zsh-hook preexec slick_prompt_preexec
 
+# Register zle widgets
+zle -N zle-keymap-select
+zle -N zle-line-init
+
+# Global variables
 typeset -g slick_prompt_data
 typeset -g slick_prompt_timestamp
 
@@ -38,13 +58,27 @@ SLICK_PATH=$HOME/.cargo/bin/slick
 
 function slick_prompt_refresh {
     local exit_status=$?
-    read -r -u $1 slick_prompt_data
-    PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""} -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
+    local line
+
+    # Read ONE line per callback (non-blocking!)
+    # ZSH will call this function again if there's more data
+    if read -r -u $1 line; then
+        slick_prompt_data="$line"
+
+        # Always pass timestamp if available (needed for ALL phases to show elapsed time!)
+        if [[ -n "$slick_prompt_timestamp" ]]; then
+            PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""} -t ${slick_prompt_timestamp:-$EPOCHSECONDS})
+        else
+            PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""})
+        fi
+
+        zle reset-prompt
+        return  # RETURN immediately - don't block! Handler will be called again for next line
+    fi
+
+    # No more data - close fd and remove handler
+    # Clean up timestamp now that all phases are complete
     unset slick_prompt_timestamp
-
-    zle reset-prompt
-
-    # Remove the handler and close the fd
     zle -F $1
     exec {1}<&-
 }
@@ -73,7 +107,7 @@ function slick_prompt_preexec() {
     # 5  ⇒  blinking bar, xterm.
     # 6  ⇒  steady bar, xterm.
 
-    echo -ne "\e[4 q";
+    echo -ne "\e[4 q"
 }
 ```
 
@@ -104,7 +138,7 @@ Slick can be customized using environment variables.
 ### Quick Start
 
 ```bash
-# Disable git fetch for faster prompts
+# Disable git fetch for faster prompts (removes ~500ms auth check on first run)
 export SLICK_PROMPT_GIT_FETCH=0
 
 # Custom symbols
@@ -201,20 +235,27 @@ See more examples in [envrc](envrc).
 
 Slick automatically detects when SSH remotes require authentication and displays a lock symbol (🔒).
 
-**How it works:**
-- Non-blocking: First time you `cd` into a repo, auth check runs in background
-- Subsequent prompts show the lock symbol if SSH authentication is required
-- Cache-based: Auth status is cached for 5 minutes in `~/.cache/slick/`
-- Only checks SSH remotes (`git@` and `ssh://`) with 2-second timeout
-- No hanging or password prompts - completely non-interactive
+**How it works (Streaming Async Prompts):**
+- **Instant display**: Prompt shows immediately with cached auth status (from previous runs)
+- **Async update**: If git fetch is enabled, auth check runs in background with 500ms grace period
+- **Smart cache**: First run takes ~500ms to write cache, subsequent runs are instant with cached status
+- **Cache-based**: Auth status is cached for 5 minutes in `~/.cache/slick/`
+- **Non-blocking**: Uses tokio for true async I/O - no delays, no hanging
+- **Smart timeout**: Git fetch has 5-second timeout to prevent indefinite waits
 
 **Example:**
 ```bash
 # cd into repo with SSH remote requiring auth
 cd my-private-repo
-# First prompt: no lock (background check running)
-# Next prompt: 🔒 appears if auth is needed
+# First time: ~500ms to check and write cache (shows auth_failed status)
+# Subsequent prompts: instant 🔒 from cache (valid for 5 minutes)
+# After cache expires (5 min): another ~500ms check to refresh cache
 ```
+
+**Two-phase rendering:**
+1. **Phase 1 (0ms)**: Display prompt immediately with all git info + cached auth status
+2. **Phase 2 (async)**: Git status updates (~10-50ms), then git fetch checks auth (~500ms)
+3. **Cache write**: Auth status written to cache for next prompt
 
 Configure the lock symbol:
 ```bash

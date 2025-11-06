@@ -43,6 +43,13 @@ if [ ! -f "$SLICK" ]; then
     exit 1
 fi
 
+# Check for jq
+if ! command -v jq &>/dev/null; then
+    echo -e "${RED}Error: jq is required but not installed${NC}"
+    echo "Install with: sudo apt-get install jq (Debian/Ubuntu) or brew install jq (macOS)"
+    exit 1
+fi
+
 # Temp directory
 TEST_DIR="/tmp/slick-test-$$"
 mkdir -p "$TEST_DIR"
@@ -73,20 +80,23 @@ echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━�
 test_case "Basic Git Repository"
 create_test_repo "$TEST_DIR/test1"
 OUT=$("$SLICK" precmd 2>&1)
-[[ "$OUT" == *'"branch"'* ]] && pass "Git repo detection" || fail "Failed"
+BRANCH=$(echo "$OUT" | jq -r '.branch // empty' 2>/dev/null)
+[ "$BRANCH" != "" ] && pass "Git repo detection" || fail "Failed"
 
 # TEST 2: Non-Git Directory
 test_case "Non-Git Directory"
 cd "$TEST_DIR"
 OUT=$("$SLICK" precmd 2>&1)
-[ "$OUT" = "" ] && pass "No output outside git" || fail "Should be empty"
+BRANCH=$(echo "$OUT" | jq -r '.branch // empty' 2>/dev/null | head -1)
+[ "$BRANCH" = "" ] && pass "Empty branch outside git" || fail "Should have empty branch"
 
 # TEST 3: Modified Files
 test_case "Modified Files Detection"
 create_test_repo "$TEST_DIR/test3"
 echo "modified" >README.md
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-[[ "$OUT" == *'M 1'* ]] && pass "Modified file detected" || fail "Not detected"
+STATUS=$(echo "$OUT" | jq -r '.status // empty' 2>/dev/null)
+[[ "$STATUS" == *'M 1'* ]] && pass "Modified file detected" || fail "Not detected"
 
 # TEST 4: Staged Files
 test_case "Staged Files Detection"
@@ -94,14 +104,16 @@ create_test_repo "$TEST_DIR/test4"
 echo "new file" >newfile.txt
 git add newfile.txt
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-[[ "$OUT" == *'"staged":true'* ]] && pass "Staged file detected" || fail "Not detected"
+STATUS=$(echo "$OUT" | jq -r '.status // empty' 2>/dev/null | tail -1)
+[[ "$STATUS" == *'A 1'* ]] && pass "Staged file detected" || fail "Not detected (status: $STATUS)"
 
 # TEST 5: Untracked Files
 test_case "Untracked Files Detection"
 create_test_repo "$TEST_DIR/test5"
 echo "untracked" >untracked.txt
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-[[ "$OUT" == *'?? 1'* ]] && pass "Untracked file detected" || fail "Not detected"
+STATUS=$(echo "$OUT" | jq -r '.status // empty' 2>/dev/null)
+[[ "$STATUS" == *'?? 1'* ]] && pass "Untracked file detected" || fail "Not detected"
 
 # TEST 6: Multiple File States
 test_case "Multiple File States"
@@ -110,10 +122,11 @@ echo "modified" >README.md
 echo "staged" >staged.txt && git add staged.txt
 echo "untracked" >untracked.txt
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-if [[ "$OUT" == *'M 1'* ]] && [[ "$OUT" == *'?? 1'* ]] && [[ "$OUT" == *'"staged":true'* ]]; then
+STATUS=$(echo "$OUT" | jq -r '.status // empty' 2>/dev/null | tail -1)
+if [[ "$STATUS" == *'M 1'* ]] && [[ "$STATUS" == *'?? 1'* ]] && [[ "$STATUS" == *'A 1'* ]]; then
     pass "Multiple states detected"
 else
-    fail "Not all states detected"
+    fail "Not all states detected (status: $STATUS)"
 fi
 
 # TEST 7: JSON Output Format
@@ -123,7 +136,7 @@ OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
 REQUIRED=("branch" "status" "staged" "remote" "action" "u_name")
 ALL_VALID=true
 for field in "${REQUIRED[@]}"; do
-    if ! echo "$OUT" | grep -q "\"$field\""; then
+    if ! echo "$OUT" | jq -e "has(\"$field\")" >/dev/null 2>&1; then
         fail "Missing field: $field"
         ALL_VALID=false
     fi
@@ -136,7 +149,8 @@ create_test_repo "$TEST_DIR/test8"
 COMMIT=$(git rev-parse HEAD)
 git checkout -q "$COMMIT" 2>/dev/null
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-[[ "$OUT" == *'"branch"'* ]] && pass "Detached HEAD works" || fail "Failed"
+BRANCH=$(echo "$OUT" | jq -r '.branch // empty' 2>/dev/null)
+[ "$BRANCH" != "" ] && pass "Detached HEAD works" || fail "Failed"
 
 # TEST 9: Prompt Display Integration
 test_case "Prompt Display Integration"
@@ -219,7 +233,8 @@ fi
 test_case "Git User Name Detection"
 create_test_repo "$TEST_DIR/test14"
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
-[[ "$OUT" == *'"u_name":"Test User"'* ]] && pass "User name detected" || fail "Not detected"
+U_NAME=$(echo "$OUT" | jq -r '.u_name // empty' 2>/dev/null | tail -1)
+[ "$U_NAME" = "Test User" ] && pass "User name detected" || fail "Not detected (got: $U_NAME)"
 
 # TEST 15: Empty Repository
 test_case "Empty Repository (No Commits)"
@@ -267,17 +282,16 @@ else
     pass "Benchmark completed"
 fi
 
-
 # TEST 18: Custom Environment Variables
 test_case "Custom Environment Variables"
 create_test_repo "$TEST_DIR/test18"
 # Source test config
 source "$SCRIPT_DIR/envrc.test"
 # Get prompt output
-DATA=$($SLICK precmd 2>&1)
-PROMPT=$($SLICK prompt -k main -r 0 -d "$DATA" 2>&1)
+DATA=$("$SLICK" precmd 2>&1)
+PROMPT=$("$SLICK" prompt -k main -r 0 -d "$DATA" 2>&1)
 # Verify prompt was generated
-if [ -n "$PROMPT" ]; then
+if [ "$PROMPT" != "" ]; then
     pass "Custom env vars applied"
 else
     fail "Failed to generate prompt"

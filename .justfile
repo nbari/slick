@@ -1,7 +1,11 @@
 # Run all tests
-test: clippy
+test: clippy build
     cargo test
     ./test.sh
+
+# Run benchmarks
+bench:
+    cargo bench
 
 # Run clippy with strict warnings
 clippy:
