@@ -1,2 +1,8 @@
 /target/
 **/*.rs.bk
+.DS_Store
+.claude/
+.copilot/
+.cursor/
+.idea/
+.vscode/

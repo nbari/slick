@@ -5,10 +5,10 @@ use std::{
     collections::BTreeMap,
     env, fs,
     path::PathBuf,
-    process::Command,
     str,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
+use tokio::{process::Command, time::timeout};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 struct Prompt {
@@ -32,7 +32,6 @@ pub fn render() {
 fn build_prompt(repo: &Repository) {
     let mut prompt = Prompt::default();
 
-    // ===== SYNCHRONOUS PART (instant display) =====
     // get user.name
     if let Ok(config) = repo.config() {
         prompt.u_name = config
@@ -54,49 +53,61 @@ fn build_prompt(repo: &Repository) {
     if get_env("SLICK_PROMPT_GIT_FETCH") != "0" {
         let cache_path = get_auth_cache_path(repo);
 
-        // Git fetch (detached) - also check for auth errors
-        if let Some(cache) = cache_path {
-            let cache_str = cache.to_string_lossy().to_string();
-
-            // Create cache directory
-            if let Some(parent) = cache.parent() {
+        tokio::spawn(async move {
+            // Create cache directory if cache path exists
+            if let Some(ref cache) = cache_path
+                && let Some(parent) = cache.parent()
+            {
                 let _ = fs::create_dir_all(parent);
             }
 
-            let _ = Command::new("sh")
-                .arg("-c")
-                .arg(format!(
-                    r#"(
-                        stderr=$(timeout 5 git -c gc.auto=0 fetch --quiet --no-tags --no-recurse-submodules 2>&1)
-                        exit_code=$?
-                        if [ $exit_code -eq 0 ]; then
-                            echo "$(date +%s):0" > {}
-                        elif [ $exit_code -eq 124 ]; then
-                            # Timeout - likely auth issue
-                            echo "$(date +%s):1" > {}
-                        elif echo "$stderr" | grep -qiE "(permission denied|authentication failed|could not read|repository not found|access denied)"; then
-                            echo "$(date +%s):1" > {}
-                        fi
-                    ) >/dev/null 2>&1 &"#,
-                    cache_str, cache_str, cache_str
-                ))
-                .env("GIT_TERMINAL_PROMPT", "0")
-                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ControlMaster=no")
+            let mut cmd = Command::new("git");
+            cmd.env("GIT_TERMINAL_PROMPT", "0")
+                .env(
+                    "GIT_SSH_COMMAND",
+                    "ssh -o BatchMode=yes -o ControlMaster=no",
+                )
                 .env("GIT_ASKPASS", "true")
-                .spawn();
-        } else {
-            // Fallback to simple fetch if no cache path
-            let _ = Command::new("sh")
                 .arg("-c")
-                .arg("(timeout 5 git -c gc.auto=0 fetch --quiet --no-tags --no-recurse-submodules >/dev/null 2>&1) &")
-                .env("GIT_TERMINAL_PROMPT", "0")
-                .env("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ControlMaster=no")
-                .env("GIT_ASKPASS", "true")
-                .spawn();
-        }
+                .arg("gc.auto=0")
+                .arg("fetch")
+                .arg("--quiet")
+                .arg("--no-tags")
+                .arg("--no-recurse-submodules");
+
+            // Use tokio timeout for 5 second limit
+            let result = timeout(Duration::from_secs(5), cmd.output()).await;
+
+            // Write auth status to cache if we have a cache path
+            if let Some(cache) = cache_path {
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+
+                let auth_failed = match result {
+                    Ok(Ok(output)) => {
+                        if output.status.success() {
+                            false
+                        } else {
+                            // Check stderr for auth-related errors
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            stderr.to_lowercase().contains("permission denied")
+                                || stderr.to_lowercase().contains("authentication failed")
+                                || stderr.to_lowercase().contains("could not read")
+                                || stderr.to_lowercase().contains("repository not found")
+                                || stderr.to_lowercase().contains("access denied")
+                        }
+                    }
+                    Ok(Err(_)) | Err(_) => true, // Command error or timeout
+                };
+
+                let status = if auth_failed { "1" } else { "0" };
+                let _ = fs::write(cache, format!("{}:{}", now, status));
+            }
+        });
     }
 
-    // ===== SYNCHRONOUS GIT STATUS (for real-time repo state) =====
     // git remote
     let (ahead, behind) = is_ahead_behind_remote(repo);
     if behind > 0 {
