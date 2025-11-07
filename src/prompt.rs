@@ -7,7 +7,7 @@ use std::{
     process::exit,
     time::{Duration, SystemTime},
 };
-use users::{get_current_uid, get_user_by_uid};
+use uzers::{get_current_uid, get_user_by_uid};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(default)]

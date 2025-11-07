@@ -1,3 +1,8 @@
+## 0.14.5 (2025-11-07)
+
+### Changed
+- cargo update replaced crate users with uzers
+
 ## 0.14.4 (2025-11-07)
 
 ### Fixed
