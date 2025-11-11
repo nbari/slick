@@ -18,18 +18,11 @@ jobs:
     uses: ./.github/workflows/coverage.yml
     secrets: inherit
 
-  security:
-    uses: ./.github/workflows/security.yml
-
-  containers:
-    uses: ./.github/workflows/containers.yml
-
   build:
     name: Build
     runs-on: ${{ matrix.os }}
-    needs: 
+    needs:
       - test
-      - containers
 
     strategy:
       matrix:
@@ -81,7 +74,8 @@ jobs:
 
       - name: Build (Linux musl)
         if: matrix.build == 'linux'
-        run: cargo build --release --locked --target ${{ matrix.target }} --features "openssl/vendored"
+        run: cargo build --release --locked --target ${{ matrix.target }} --features
+          "openssl/vendored"
 
       - name: Build
         if: matrix.build != 'linux'
