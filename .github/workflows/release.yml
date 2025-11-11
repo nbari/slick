@@ -14,15 +14,11 @@ jobs:
   test:
     uses: ./.github/workflows/test.yml
 
-  containers:
-    uses: ./.github/workflows/containers.yml
-
   build:
     name: Build and release
     runs-on: ${{ matrix.os }}
     needs:
       - test
-      - containers
 
     strategy:
       matrix:
@@ -67,7 +63,8 @@ jobs:
       # Build once for Linux (musl)
       - name: Build Linux (musl)
         if: matrix.build == 'linux'
-        run: cargo build --release --locked --target ${{ matrix.target }} --features musl
+        run: cargo build --release --locked --target ${{ matrix.target }} --features
+          musl
 
       # Strip once and prep paths for both packagers
       - name: Strip and prepare packaging paths (Linux)
