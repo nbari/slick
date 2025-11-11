@@ -35,10 +35,6 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
 
-          - build: windows
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -71,14 +67,6 @@ jobs:
         run: |
           cargo install cargo-generate-rpm
           cargo install cargo-deb --force --locked
-
-      # Windows prerequisites
-      - run: choco install openssl
-        if: matrix.build == 'windows'
-
-      - run: echo 'OPENSSL_DIR=C:\Program Files\OpenSSL-Win64' | Out-File -FilePath
-          $env:GITHUB_ENV -Append
-        if: matrix.build == 'windows'
 
       # Build once for Linux (musl)
       - name: Build Linux (musl)
@@ -114,7 +102,7 @@ jobs:
           echo "DEB_ASSET=$DEB_PATH" >> $GITHUB_ENV
           echo "DEB: $DEB_PATH"
 
-      # Non-Linux builds (macOS, Windows)
+      # Non-Linux builds (macOS)
       - name: Build
         if: matrix.build != 'linux'
         run: cargo build --release --locked --target ${{ matrix.target }}
@@ -126,19 +114,10 @@ jobs:
           dirname="$binary_name-${{ env.VERSION }}-${{ matrix.target }}"
           mkdir "$dirname"
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            mv "target/${{ matrix.target }}/release/$binary_name.exe" "$dirname"
-          else
-            mv "target/${{ matrix.target }}/release/$binary_name" "$dirname"
-          fi
+          mv "target/${{ matrix.target }}/release/$binary_name" "$dirname"
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            7z a "$dirname.zip" "$dirname"
-            echo "ASSET=$dirname.zip" >> $GITHUB_ENV
-          else
-            tar -czf "$dirname.tar.gz" "$dirname"
-            echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
-          fi
+          tar -czf "$dirname.tar.gz" "$dirname"
+          echo "ASSET=$dirname.tar.gz" >> $GITHUB_ENV
 
       # Skip release if the tag starts with 't'
       - name: Release

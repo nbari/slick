@@ -35,10 +35,6 @@ jobs:
             os: macos-latest
             target: x86_64-apple-darwin
 
-          - build: windows
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -64,13 +60,6 @@ jobs:
 
       - run: sudo apt -y install musl-dev musl-tools
         if: matrix.build == 'linux'
-
-      - run: choco install openssl
-        if: matrix.build == 'windows'
-
-      - run: echo 'OPENSSL_DIR=C:\Program Files\OpenSSL-Win64' | Out-File -FilePath
-          $env:GITHUB_ENV -Append
-        if: matrix.build == 'windows'
 
       - name: Build (Linux musl)
         if: matrix.build == 'linux'

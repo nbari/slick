@@ -68,11 +68,15 @@ pub async fn render() {
         // Phase 2a: Spawn blocking task for slow git status (CPU-bound)
         let repo_path = repo.path().to_path_buf();
         let status_handle = spawn_blocking(move || -> Option<String> {
-            // TEST: Simulate slow git status (remove this in production)
+            // TEST: Simulate slow git status (for testing non-blocking behavior)
+            // Set SLICK_TEST_DELAY=N to add N seconds delay (e.g., SLICK_TEST_DELAY=1)
             // Note: Using thread::sleep here (not tokio::time::sleep) because spawn_blocking
             // runs in a blocking thread pool where synchronous sleep is appropriate
-            if env::var("SLICK_TEST_DELAY").is_ok() {
-                sleep(Duration::from_secs(3));
+            if let Ok(delay_str) = env::var("SLICK_TEST_DELAY")
+                && let Ok(delay_secs) = delay_str.parse::<u64>()
+                && delay_secs > 0
+            {
+                sleep(Duration::from_secs(delay_secs));
             }
 
             // Re-open repository in the blocking thread pool
