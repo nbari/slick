@@ -46,24 +46,32 @@ pub fn display(matches: &ArgMatches) {
         serde_json::from_str(&serialized).unwrap_or_else(|_| Prompt::default());
 
     // get time elapsed
-    let epochtime: u64 = matches
-        .get_one("time")
-        .map_or(String::new(), String::clone)
-        .parse::<u64>()
-        .ok()
-        .map_or_else(
-            || match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                Ok(n) => n.as_secs(),
-                Err(e) => {
-                    eprintln!("SystemTime before UNIX EPOCH!: {e}");
-                    exit(1)
-                }
-            },
-            |v| v,
-        );
+    // Prefer -e (elapsed) if provided (pre-calculated in zsh to avoid flickering)
+    // Fallback to -t (timestamp) for backwards compatibility
+    let time_elapsed: u64 = matches.get_one::<String>("elapsed").map_or_else(
+        || {
+            // Fallback: calculate from timestamp (legacy behavior)
+            let epochtime: u64 = matches
+                .get_one("time")
+                .map_or(String::new(), String::clone)
+                .parse::<u64>()
+                .ok()
+                .map_or_else(
+                    || match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                        Ok(n) => n.as_secs(),
+                        Err(e) => {
+                            eprintln!("SystemTime before UNIX EPOCH!: {e}");
+                            exit(1)
+                        }
+                    },
+                    |v| v,
+                );
 
-    let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
-    let time_elapsed = d.elapsed().map_or(0, |elapsed| elapsed.as_secs());
+            let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
+            d.elapsed().map_or(0, |elapsed| elapsed.as_secs())
+        },
+        |elapsed_str| elapsed_str.parse::<u64>().unwrap_or(0),
+    );
 
     // Cache frequently used values
     let is_root_user = is_root();

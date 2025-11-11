@@ -12,7 +12,7 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
@@ -30,13 +30,15 @@ jobs:
         run: if [[ ! -e ~/.cargo/bin/grcov ]]; then cargo install grcov; fi
 
       - name: Run grcov
-        run: grcov . --binary-path target/debug/deps/ -s . -t lcov --branch --ignore-not-existing
+        run: grcov . --binary-path target/debug/ -s . -t lcov --branch --ignore-not-existing
           --ignore '../**' --ignore '/*' -o coverage.lcov
 
-      - uses: codecov/codecov-action@v4
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.lcov
+          files: coverage.lcov
           flags: rust
 
       - name: Coveralls GitHub Action

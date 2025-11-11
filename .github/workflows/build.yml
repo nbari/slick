@@ -18,10 +18,18 @@ jobs:
     uses: ./.github/workflows/coverage.yml
     secrets: inherit
 
+  security:
+    uses: ./.github/workflows/security.yml
+
+  containers:
+    uses: ./.github/workflows/containers.yml
+
   build:
     name: Build
     runs-on: ${{ matrix.os }}
-    needs: test
+    needs: 
+      - test
+      - containers
 
     strategy:
       matrix:
@@ -29,9 +37,26 @@ jobs:
           - build: linux
             os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+
+          - build: macos
+            os: macos-latest
+            target: x86_64-apple-darwin
+
+          - build: windows
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+
+      - name: Get package name from Cargo.toml
+        id: package
+        shell: bash
+        run: |
+          PACKAGE_NAME=$(awk -F '"' '/^name = / {print $2; exit}' Cargo.toml)
+          echo "name=$PACKAGE_NAME" >> $GITHUB_OUTPUT
+          echo "Package name: $PACKAGE_NAME"
 
       - name: Branch name
         run: echo "${GITHUB_REF##*/}"
@@ -47,12 +72,17 @@ jobs:
       - run: sudo apt -y install musl-dev musl-tools
         if: matrix.build == 'linux'
 
-      - name: Build Linux
-        run: |
-          cargo build --release --locked --target ${{ matrix.target }} --features "openssl/vendored"
+      - run: choco install openssl
+        if: matrix.build == 'windows'
+
+      - run: echo 'OPENSSL_DIR=C:\Program Files\OpenSSL-Win64' | Out-File -FilePath
+          $env:GITHUB_ENV -Append
+        if: matrix.build == 'windows'
+
+      - name: Build (Linux musl)
         if: matrix.build == 'linux'
+        run: cargo build --release --locked --target ${{ matrix.target }} --features "openssl/vendored"
 
       - name: Build
-        run: |
-          cargo build --release --locked --target ${{ matrix.target }}
         if: matrix.build != 'linux'
+        run: cargo build --release --locked --target ${{ matrix.target }}

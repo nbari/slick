@@ -1,3 +1,15 @@
+## 0.14.6
+
+### Fixed
+- **Elapsed time no longer flickers** - Fixed time recalculation across render phases
+- Elapsed time now calculated once in `precmd` and passed to all render phases
+- Consistent elapsed time display across Phase 1 and Phase 2 renders
+
+### Changed
+- Added `-e` (elapsed) flag to `prompt` subcommand for pre-calculated elapsed time
+- Updated `load.zsh` to calculate elapsed time once and pass via `-e` flag
+- Deprecated `-t` (timestamp) flag in favor of `-e` for better UX (kept for backwards compatibility)
+
 ## 0.14.5 (2025-11-07)
 
 ### Changed

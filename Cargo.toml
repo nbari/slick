@@ -1,6 +1,6 @@
 [package]
 name = "slick"
-version = "0.14.5"
+version = "0.14.6"
 authors = ["Nicolas Embriz <nbari@tequila.io>"]
 description = "async ZSH prompt"
 documentation = "https://github.com/nbari/slick/blob/master/README.md"
@@ -35,3 +35,14 @@ criterion = "0.7"
 [[bench]]
 name = "prompt_bench"
 harness = false
+
+[package.metadata.generate-rpm]
+assets = [
+    { source = "target/release/slick", dest = "/usr/bin/slick", mode = "0755" },
+]
+
+[package.metadata.deb]
+assets = [
+  ["target/release/slick", "/usr/bin/slick", "755"],
+]
+depends = ""
