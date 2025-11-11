@@ -63,8 +63,7 @@ jobs:
 
       - name: Build (Linux musl)
         if: matrix.build == 'linux'
-        run: cargo build --release --locked --target ${{ matrix.target }} --features
-          "openssl/vendored"
+        run: cargo build --release --locked --target ${{ matrix.target }} --features musl
 
       - name: Build
         if: matrix.build != 'linux'
