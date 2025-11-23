@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::indexing_slicing)]
+
 use criterion::{Criterion, criterion_group, criterion_main};
 use git2::Repository;
 use std::env;

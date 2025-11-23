@@ -73,6 +73,6 @@ fn test_all_env_vars_have_defaults() {
 
     for var in vars {
         let value = get_env(var);
-        assert!(!value.is_empty(), "{} should have a default value", var);
+        assert!(!value.is_empty(), "{var} should have a default value");
     }
 }

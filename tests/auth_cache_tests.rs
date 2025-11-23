@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::indexing_slicing)]
+
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::TempDir;
@@ -11,7 +14,7 @@ fn create_mock_cache(dir: &TempDir, filename: &str, age_seconds: u64, auth_faile
         .as_secs();
     let timestamp = now - age_seconds;
     let status = if auth_failed { "1" } else { "0" };
-    fs::write(&cache_path, format!("{}:{}", timestamp, status)).unwrap();
+    fs::write(&cache_path, format!("{timestamp}:{status}")).unwrap();
     cache_path.to_str().unwrap().to_string()
 }
 
@@ -161,13 +164,13 @@ fn test_auth_cache_multiple_writes() {
 #[test]
 fn test_auth_cache_path_generation() {
     // Test that different repo paths generate different cache files
-    let hash1 = "/home/user/repo1/.git"
-        .bytes()
-        .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
+    let hash1 = "/home/user/repo1/.git".bytes().fold(0u64, |acc, b| {
+        acc.wrapping_mul(31).wrapping_add(u64::from(b))
+    });
 
-    let hash2 = "/home/user/repo2/.git"
-        .bytes()
-        .fold(0u64, |acc, b| acc.wrapping_mul(31).wrapping_add(b as u64));
+    let hash2 = "/home/user/repo2/.git".bytes().fold(0u64, |acc, b| {
+        acc.wrapping_mul(31).wrapping_add(u64::from(b))
+    });
 
     assert_ne!(hash1, hash2);
 }
@@ -183,7 +186,7 @@ fn test_auth_cache_whitespace_in_status() {
         .as_secs();
 
     // Write with whitespace
-    fs::write(&cache_path, format!("{}:1\n", now)).unwrap();
+    fs::write(&cache_path, format!("{now}:1\n")).unwrap();
 
     let content = fs::read_to_string(&cache_path).unwrap();
     let (_, status) = content.split_once(':').unwrap();

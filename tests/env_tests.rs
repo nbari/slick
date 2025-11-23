@@ -1,6 +1,6 @@
 //! Environment variable configuration tests
 //!
-//! These tests verify the behavior of get_env() without modifying
+//! These tests verify the behavior of `get_env()` without modifying
 //! environment variables to avoid unsafe operations.
 
 #[test]
@@ -34,8 +34,8 @@ fn test_get_env_color_values_are_numeric_or_named() {
     for color_var in &colors {
         let val = slick::get_env(color_var);
         // Should return either a number or a color name
-        assert!(!val.is_empty(), "{} should not be empty", color_var);
-        assert_ne!(val, "??", "{} should be a valid config", color_var);
+        assert!(!val.is_empty(), "{color_var} should not be empty");
+        assert_ne!(val, "??", "{color_var} should be a valid config");
     }
 }
 

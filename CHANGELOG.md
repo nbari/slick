@@ -1,3 +1,16 @@
+## 0.15.0 (2025-11-23)
+
+### Added
+- New `git` module (`src/git.rs`) for centralized Git operations.
+- Comprehensive unit tests for the `git` module.
+
+### Changed
+- Refactored Git-related logic from `src/precmd.rs` into `src/git.rs`, improving code organization and modularity.
+- Enhanced public API documentation for the `git` module.
+
+### Fixed
+- Addressed various Clippy lints (`must_use_candidate`, `doc_markdown`, `double_must_use`), improving code quality and adherence to best practices.
+
 ## 0.14.6 (2025-11-11)
 
 ### Fixed

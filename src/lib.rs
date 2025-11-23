@@ -1,3 +1,4 @@
+pub mod git;
 pub mod precmd;
 pub mod prompt;
 

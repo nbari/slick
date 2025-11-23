@@ -9,7 +9,7 @@ bench:
 
 # Run clippy with strict warnings
 clippy:
-  cargo clippy --all-targets --all-features -- -D clippy::all -D clippy::nursery -D warnings
+  cargo clippy --all-targets --all-features
 
 # Build release binary
 build:

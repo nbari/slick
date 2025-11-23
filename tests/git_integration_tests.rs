@@ -1,3 +1,6 @@
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::indexing_slicing)]
+
 use git2::{Repository, Signature};
 use std::fs;
 use std::path::PathBuf;
