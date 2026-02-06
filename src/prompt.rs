@@ -56,16 +56,15 @@ pub fn display(matches: &ArgMatches) {
                 .map_or(String::new(), String::clone)
                 .parse::<u64>()
                 .ok()
-                .map_or_else(
-                    || match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                .unwrap_or_else(|| {
+                    match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
                         Ok(n) => n.as_secs(),
                         Err(e) => {
                             eprintln!("SystemTime before UNIX EPOCH!: {e}");
                             exit(1)
                         }
-                    },
-                    |v| v,
-                );
+                    }
+                });
 
             let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
             d.elapsed().map_or(0, |elapsed| elapsed.as_secs())
