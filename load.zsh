@@ -49,7 +49,7 @@ function slick_prompt_refresh {
             PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""})
         fi
 
-        zle reset-prompt
+        zle && zle reset-prompt
         return  # RETURN immediately - don't block! Handler will be called again for next line
     fi
 
