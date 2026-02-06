@@ -69,7 +69,20 @@ pub fn display(matches: &ArgMatches) {
             let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
             d.elapsed().map_or(0, |elapsed| elapsed.as_secs())
         },
-        |elapsed_str| elapsed_str.parse::<u64>().unwrap_or(0),
+        |elapsed_str| {
+            // Parse as i64 first to handle negative values, then convert to u64
+            // Negative values (from clock adjustments) are clamped to 0
+            elapsed_str
+                .parse::<i64>()
+                .ok()
+                .map_or(0, |val| {
+                    if val < 0 {
+                        0
+                    } else {
+                        val.cast_unsigned()
+                    }
+                })
+        },
     );
 
     // Cache frequently used values

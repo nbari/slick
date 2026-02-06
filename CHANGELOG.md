@@ -1,3 +1,12 @@
+## 0.15.2 (2026-02-06)
+
+### Fixed
+- Fixed "unexpected argument '-3' found" error when system clock is adjusted backwards (#19)
+- Negative elapsed time values now clamped to 0 instead of causing argument parsing errors
+
+### Added
+- Comprehensive tests for elapsed time handling including negative values
+
 ## 0.15.0 (2025-11-23)
 
 ### Added

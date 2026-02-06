@@ -74,6 +74,8 @@ function slick_prompt_precmd() {
     # Otherwise, leave it unset (no command was run, e.g., just pressed enter)
     if [[ -n "$slick_prompt_timestamp" ]]; then
         slick_prompt_elapsed=$(( $EPOCHSECONDS - $slick_prompt_timestamp ))
+        # Ensure elapsed time is never negative (can happen with clock adjustments)
+        [[ $slick_prompt_elapsed -lt 0 ]] && slick_prompt_elapsed=0
     else
         unset slick_prompt_elapsed
     fi
