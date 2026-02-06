@@ -12,7 +12,7 @@ fn get_slick_binary() -> String {
     // Try release binary first, then debug
     let release_path = "./target/release/slick";
     let debug_path = "./target/debug/slick";
-    
+
     if std::path::Path::new(release_path).exists() {
         release_path.to_string()
     } else if std::path::Path::new(debug_path).exists() {
@@ -34,7 +34,7 @@ fn test_negative_elapsed_time_does_not_error() {
         "Command should succeed with negative elapsed time. stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    
+
     // Should not contain error message
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(
@@ -51,9 +51,9 @@ fn test_negative_elapsed_time_shows_no_elapsed() {
         .expect("Failed to execute slick");
 
     assert!(output.status.success());
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
-    
+
     // Negative elapsed should be treated as 0, which won't show elapsed time
     // (default threshold is 5 seconds)
     // The output should NOT contain time format patterns like "s", "m", "h", "d"
@@ -72,9 +72,9 @@ fn test_zero_elapsed_time_shows_no_elapsed() {
         .expect("Failed to execute slick");
 
     assert!(output.status.success());
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
-    
+
     // 0 seconds should not show elapsed time (threshold is 5)
     assert!(
         !stdout.contains("SLICK_PROMPT_TIME_ELAPSED_COLOR"),
@@ -90,9 +90,9 @@ fn test_positive_elapsed_time_above_threshold_shows_elapsed() {
         .expect("Failed to execute slick");
 
     assert!(output.status.success());
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
-    
+
     // 10 seconds should show elapsed time (above threshold of 5)
     // Should contain "10s" in the output
     assert!(
@@ -112,7 +112,7 @@ fn test_large_negative_elapsed_time() {
         output.status.success(),
         "Command should succeed with large negative elapsed time"
     );
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(
         !stdout.contains("999"),
@@ -128,9 +128,9 @@ fn test_elapsed_time_below_threshold_not_shown() {
         .expect("Failed to execute slick");
 
     assert!(output.status.success());
-    
+
     let stdout = String::from_utf8_lossy(&output.stdout);
-    
+
     // 3 seconds should not show elapsed time (below threshold of 5)
     assert!(
         !stdout.contains("3s"),
