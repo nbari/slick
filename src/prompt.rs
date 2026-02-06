@@ -48,37 +48,36 @@ pub fn display(matches: &ArgMatches) {
     // get time elapsed
     // Prefer -e (elapsed) if provided (pre-calculated in zsh to avoid flickering)
     // Fallback to -t (timestamp) for backwards compatibility
-    let time_elapsed: u64 =
-        matches.get_one::<String>("elapsed").map_or_else(
-            || {
-                // Fallback: calculate from timestamp (legacy behavior)
-                let epochtime: u64 = matches
-                    .get_one("time")
-                    .map_or(String::new(), String::clone)
-                    .parse::<u64>()
-                    .ok()
-                    .unwrap_or_else(|| {
-                        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-                            Ok(n) => n.as_secs(),
-                            Err(e) => {
-                                eprintln!("SystemTime before UNIX EPOCH!: {e}");
-                                exit(1)
-                            }
+    let time_elapsed: u64 = matches.get_one::<String>("elapsed").map_or_else(
+        || {
+            // Fallback: calculate from timestamp (legacy behavior)
+            let epochtime: u64 = matches
+                .get_one("time")
+                .map_or(String::new(), String::clone)
+                .parse::<u64>()
+                .ok()
+                .unwrap_or_else(|| {
+                    match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+                        Ok(n) => n.as_secs(),
+                        Err(e) => {
+                            eprintln!("SystemTime before UNIX EPOCH!: {e}");
+                            exit(1)
                         }
-                    });
+                    }
+                });
 
-                let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
-                d.elapsed().map_or(0, |elapsed| elapsed.as_secs())
-            },
-            |elapsed_str| {
-                // Parse as i64 first to handle negative values, then convert to u64
-                // Negative values (from clock adjustments) are clamped to 0
-                elapsed_str
-                    .parse::<i64>()
-                    .ok()
-                    .map_or(0, |val| if val < 0 { 0 } else { val.cast_unsigned() })
-            },
-        );
+            let d = SystemTime::UNIX_EPOCH + Duration::from_secs(epochtime);
+            d.elapsed().map_or(0, |elapsed| elapsed.as_secs())
+        },
+        |elapsed_str| {
+            // Parse as i64 first to handle negative values, then convert to u64
+            // Negative values (from clock adjustments) are clamped to 0
+            elapsed_str
+                .parse::<i64>()
+                .ok()
+                .map_or(0, |val| if val < 0 { 0 } else { val.cast_unsigned() })
+        },
+    );
 
     // Cache frequently used values
     let is_root_user = is_root();
