@@ -1,6 +1,6 @@
 [package]
 name = "slick"
-version = "0.15.2"
+version = "0.15.3"
 authors = ["Nicolas Embriz <nbari@tequila.io>"]
 description = "async ZSH prompt"
 documentation = "https://github.com/nbari/slick/blob/master/README.md"
@@ -63,7 +63,7 @@ uzers = "0.12"
 
 [dev-dependencies]
 tempfile = "3"
-criterion = "0.7"
+criterion = "0.8"
 
 [[bench]]
 name = "prompt_bench"

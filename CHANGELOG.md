@@ -1,3 +1,10 @@
+## 0.15.3 (2026-02-10)
+
+### Fixed
+- Fixed issue where command output (like `ls`) could be cleared by asynchronous prompt updates, especially on macOS.
+- Implemented robust file descriptor management in `load.zsh` to ensure background prompt processes are terminated immediately when a new command begins execution (`preexec`).
+- Added explicit cleanup of stale background processes in `precmd` to prevent race conditions.
+
 ## 0.15.2 (2026-02-06)
 
 ### Fixed

@@ -29,6 +29,7 @@ zle -N zle-line-init
 
 # Global variables
 typeset -g slick_prompt_data
+typeset -g slick_prompt_fd
 typeset -g slick_prompt_timestamp
 typeset -g slick_prompt_elapsed
 
@@ -59,6 +60,11 @@ function slick_prompt_refresh {
     unset slick_prompt_elapsed
     zle -F $1
     exec {1}<&-
+    
+    # Reset global fd if it matches
+    if [[ "$1" == "$slick_prompt_fd" ]]; then
+        unset slick_prompt_fd
+    fi
 }
 
 function zle-line-init zle-keymap-select {
@@ -68,6 +74,13 @@ function zle-line-init zle-keymap-select {
 
 function slick_prompt_precmd() {
     slick_prompt_data=""
+
+    # Clean up any lingering fd from previous prompt
+    if [[ -n "$slick_prompt_fd" ]]; then
+        zle -F $slick_prompt_fd
+        exec {slick_prompt_fd}<&-
+        unset slick_prompt_fd
+    fi
 
     # Calculate elapsed time ONCE here (avoids flickering across multiple render phases)
     # If timestamp is set (command was run), calculate elapsed seconds
@@ -80,12 +93,18 @@ function slick_prompt_precmd() {
         unset slick_prompt_elapsed
     fi
 
-    local fd
-    exec {fd}< <($SLICK_PATH precmd)
-    zle -F $fd slick_prompt_refresh
+    exec {slick_prompt_fd}< <($SLICK_PATH precmd)
+    zle -F $slick_prompt_fd slick_prompt_refresh
 }
 
 function slick_prompt_preexec() {
+    # Kill any running async prompt immediately so it doesn't mess up command output
+    if [[ -n "$slick_prompt_fd" ]]; then
+        zle -F $slick_prompt_fd
+        exec {slick_prompt_fd}<&-
+        unset slick_prompt_fd
+    fi
+
     slick_prompt_timestamp=$EPOCHSECONDS
     echo -ne "\e[4 q"
 }
