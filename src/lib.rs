@@ -31,6 +31,8 @@ struct EnvDefaults {
     symbol: String,
     symbol_color: String,
     time_elapsed_color: String,
+    toolbox_color: String,
+    toolbox_symbol: String,
     vicmd_color: String,
     vicmd_symbol: String,
 }
@@ -74,6 +76,8 @@ impl EnvDefaults {
             symbol_color: env::var("SLICK_PROMPT_SYMBOL_COLOR").unwrap_or_else(|_| "5".into()),
             time_elapsed_color: env::var("SLICK_PROMPT_TIME_ELAPSED_COLOR")
                 .unwrap_or_else(|_| "3".into()),
+            toolbox_color: env::var("SLICK_PROMPT_TOOLBOX_COLOR").unwrap_or_else(|_| "6".into()),
+            toolbox_symbol: env::var("SLICK_PROMPT_TOOLBOX_SYMBOL").unwrap_or_else(|_| "🧰".into()),
             vicmd_color: env::var("SLICK_PROMPT_VICMD_COLOR").unwrap_or_else(|_| "3".into()),
             vicmd_symbol: env::var("SLICK_PROMPT_VICMD_SYMBOL").unwrap_or_else(|_| ">".into()),
         }
@@ -107,6 +111,8 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_SYMBOL" => &cache.symbol,
         "SLICK_PROMPT_SYMBOL_COLOR" => &cache.symbol_color,
         "SLICK_PROMPT_TIME_ELAPSED_COLOR" => &cache.time_elapsed_color,
+        "SLICK_PROMPT_TOOLBOX_COLOR" => &cache.toolbox_color,
+        "SLICK_PROMPT_TOOLBOX_SYMBOL" => &cache.toolbox_symbol,
         "SLICK_PROMPT_VICMD_COLOR" => &cache.vicmd_color,
         "SLICK_PROMPT_VICMD_SYMBOL" => &cache.vicmd_symbol,
         _ => "??",

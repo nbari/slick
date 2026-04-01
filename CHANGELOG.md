@@ -1,3 +1,9 @@
+## 0.16.0 (2026-04-01)
+
+### Added
+- Toolbx prompt marker showing the active toolbox name before the path, eg. `(🧰 codex)`.
+- New environment variables: `SLICK_PROMPT_TOOLBOX_SYMBOL`, `SLICK_PROMPT_TOOLBOX_COLOR`.
+
 ## 0.15.3 (2026-02-10)
 
 ### Fixed

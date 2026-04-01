@@ -1,0 +1,16 @@
+{
+  "name": "slick",
+  "image": "mcr.microsoft.com/devcontainers/rust:trixie",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "true",
+      "username": "vscode"
+    }
+  },
+  "containerEnv": {
+    "EDITOR": "nvim",
+    "VISUAL": "nvim"
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y neovim just pkg-config libssl-dev && rustup update stable && rustup default stable && rustup component add rustfmt clippy && cargo install cargo-edit --locked && cargo fetch",
+  "remoteUser": "vscode"
+}

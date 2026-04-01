@@ -161,6 +161,10 @@ export SLICK_PROMPT_VICMD_SYMBOL="❮"
 # Custom colors
 export SLICK_PROMPT_PATH_COLOR=blue
 export SLICK_PROMPT_SYMBOL_COLOR=magenta
+
+# Toolbx marker
+export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
+export SLICK_PROMPT_TOOLBOX_COLOR=cyan
 ```
 
 ### All Environment Variables
@@ -181,6 +185,7 @@ export SLICK_PROMPT_ROOT_SYMBOL="#"            # Root user symbol
 export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"       # Git ahead symbol
 export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
+export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"        # Toolbx marker symbol
 ```
 
 #### Colors
@@ -193,6 +198,7 @@ export SLICK_PROMPT_VICMD_COLOR=3              # Vi command mode color
 export SLICK_PROMPT_ROOT_COLOR=1               # Root user color
 export SLICK_PROMPT_SSH_COLOR=8                # SSH session color
 export SLICK_PROMPT_TIME_ELAPSED_COLOR=3       # Command time color
+export SLICK_PROMPT_TOOLBOX_COLOR=6            # Toolbx marker color
 ```
 
 #### Git Colors
@@ -243,6 +249,22 @@ export SLICK_PROMPT_GIT_REMOTE_BEHIND=""  # nf-md-arrow_down
 These symbols work with any Nerd Font (Monoid, JetBrainsMono, FiraCode, Hack, etc.)
 
 See more examples in [envrc](envrc).
+
+## 🧰 Toolbx Detection
+
+Slick detects when it is running inside Fedora Toolbx and shows the toolbox name before the path.
+
+**Example:**
+```bash
+(🧰 codex) ~/projects/slick main
+❯
+```
+
+Configure the Toolbx marker:
+```bash
+export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"   # Default
+export SLICK_PROMPT_TOOLBOX_COLOR=6       # Default
+```
 
 ## 🔒 SSH Authentication Detection
 

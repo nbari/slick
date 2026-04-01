@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     env,
     fmt::Write as _,
+    fs,
+    path::{Path, PathBuf},
     process::exit,
     time::{Duration, SystemTime},
 };
@@ -29,6 +31,50 @@ fn is_root() -> bool {
 // check if current user is remote or not
 fn is_remote() -> bool {
     env::var("SSH_CONNECTION").is_ok()
+}
+
+fn toolbox_env_path() -> PathBuf {
+    PathBuf::from(get_env_var_or(
+        "SLICK_TEST_TOOLBOXENV_PATH",
+        "/run/.toolboxenv",
+    ))
+}
+
+fn container_env_path() -> PathBuf {
+    PathBuf::from(get_env_var_or(
+        "SLICK_TEST_CONTAINERENV_PATH",
+        "/run/.containerenv",
+    ))
+}
+
+fn parse_toolbox_name(containerenv: &str) -> Option<String> {
+    containerenv.lines().find_map(|line| {
+        line.strip_prefix("name=\"")
+            .and_then(|name| name.strip_suffix('"'))
+            .filter(|name| !name.is_empty())
+            .map(str::to_owned)
+    })
+}
+
+fn get_toolbox_name_from_paths(toolboxenv_path: &Path, containerenv_path: &Path) -> Option<String> {
+    if !toolboxenv_path.exists() {
+        return None;
+    }
+
+    let containerenv = fs::read_to_string(containerenv_path).ok()?;
+    parse_toolbox_name(&containerenv)
+}
+
+fn get_toolbox_name() -> Option<String> {
+    get_toolbox_name_from_paths(&toolbox_env_path(), &container_env_path())
+}
+
+fn format_toolbox_marker(symbol: &str, toolbox_name: &str) -> String {
+    if symbol.is_empty() {
+        format!("({toolbox_name})")
+    } else {
+        format!("({symbol} {toolbox_name})")
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -122,6 +168,15 @@ pub fn display(matches: &ArgMatches) {
     } else if is_root_user {
         // prefix with "root" if UID = 0
         let _ = write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR"));
+    }
+
+    if let Some(toolbox_name) = get_toolbox_name() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_TOOLBOX_COLOR"),
+            format_toolbox_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
+        );
     }
 
     // PIPENV - optimized with rsplit_once
@@ -272,4 +327,64 @@ pub fn display(matches: &ArgMatches) {
     );
 
     print!("{prompt}");
+}
+
+#[cfg(test)]
+mod tests {
+    #![allow(clippy::expect_used)]
+
+    use super::{format_toolbox_marker, get_toolbox_name_from_paths, parse_toolbox_name};
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_parse_toolbox_name_returns_container_name() {
+        let containerenv = "engine=\"podman\"\nname=\"codex\"\nid=\"abc\"\n";
+        assert_eq!(parse_toolbox_name(containerenv), Some("codex".to_string()));
+    }
+
+    #[test]
+    fn test_parse_toolbox_name_returns_none_when_name_is_missing() {
+        let containerenv = "engine=\"podman\"\nimage=\"fedora-toolbox:43\"\n";
+        assert_eq!(parse_toolbox_name(containerenv), None);
+    }
+
+    #[test]
+    fn test_get_toolbox_name_from_paths_requires_toolboxenv_file() {
+        let tempdir = tempdir().expect("tempdir should be created");
+        let containerenv_path = tempdir.path().join(".containerenv");
+        fs::write(&containerenv_path, "name=\"codex\"\n").expect("containerenv should be written");
+
+        let missing_toolboxenv = tempdir.path().join(".toolboxenv");
+        assert_eq!(
+            get_toolbox_name_from_paths(&missing_toolboxenv, &containerenv_path),
+            None
+        );
+    }
+
+    #[test]
+    fn test_get_toolbox_name_from_paths_returns_name_for_toolbox() {
+        let tempdir = tempdir().expect("tempdir should be created");
+        let toolboxenv_path = tempdir.path().join(".toolboxenv");
+        let containerenv_path = tempdir.path().join(".containerenv");
+
+        fs::write(&toolboxenv_path, "").expect("toolboxenv should be written");
+        fs::write(&containerenv_path, "engine=\"podman\"\nname=\"codex\"\n")
+            .expect("containerenv should be written");
+
+        assert_eq!(
+            get_toolbox_name_from_paths(&toolboxenv_path, &containerenv_path),
+            Some("codex".to_string())
+        );
+    }
+
+    #[test]
+    fn test_format_toolbox_marker_with_symbol() {
+        assert_eq!(format_toolbox_marker("🧰", "codex"), "(🧰 codex)");
+    }
+
+    #[test]
+    fn test_format_toolbox_marker_without_symbol() {
+        assert_eq!(format_toolbox_marker("", "codex"), "(codex)");
+    }
 }

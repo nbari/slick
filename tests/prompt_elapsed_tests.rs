@@ -9,17 +9,7 @@
 use std::process::Command;
 
 fn get_slick_binary() -> String {
-    // Try release binary first, then debug
-    let release_path = "./target/release/slick";
-    let debug_path = "./target/debug/slick";
-
-    if std::path::Path::new(release_path).exists() {
-        release_path.to_string()
-    } else if std::path::Path::new(debug_path).exists() {
-        debug_path.to_string()
-    } else {
-        panic!("slick binary not found in target/release or target/debug");
-    }
+    env!("CARGO_BIN_EXE_slick").to_string()
 }
 
 #[test]
