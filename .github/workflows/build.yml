@@ -59,7 +59,7 @@ jobs:
 
       - name: Build (Linux musl)
         if: matrix.build == 'linux'
-        run: cargo build --release --locked --target ${{ matrix.target }} --features musl
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Build
         if: matrix.build != 'linux'
