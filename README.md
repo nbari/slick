@@ -232,7 +232,7 @@ export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
 export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'  # Default; set to "" to disable
 export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"         # Toolbx marker symbol
-export SLICK_PROMPT_DEVPOD_SYMBOL=""          # DevPod marker symbol
+export SLICK_PROMPT_DEVPOD_SYMBOL=$'\uf487'          # DevPod marker symbol
 ```
 
 #### Colors
@@ -363,13 +363,15 @@ Slick detects when `DEVPOD` is set and shows `DEVPOD_WORKSPACE_ID` before the pa
 
 **Example:**
 ```bash
-( hfile) ~/projects/slick main
+(<devpod-symbol> hfile) ~/projects/slick main
 ❯
 ```
 
+If the default DevPod symbol does not render correctly in your README viewer, that is expected: `` is a Nerd Font private-use glyph. In `zsh`, set it safely with `export SLICK_PROMPT_DEVPOD_SYMBOL=$'\uf487'`, or disable it with `export SLICK_PROMPT_DEVPOD_SYMBOL=""`. 
+
 Configure the DevPod marker:
 ```bash
-export SLICK_PROMPT_DEVPOD_SYMBOL=""      # Default
+export SLICK_PROMPT_DEVPOD_SYMBOL=$'\uf487'      # Default
 export SLICK_PROMPT_DEVPOD_COLOR=7        # Default
 ```
 
