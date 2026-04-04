@@ -1,3 +1,4 @@
+pub mod context;
 pub mod git;
 pub mod precmd;
 pub mod prompt;
@@ -9,9 +10,11 @@ use std::sync::OnceLock;
 static ENV_CACHE: OnceLock<EnvDefaults> = OnceLock::new();
 
 struct EnvDefaults {
+    aws_color: String,
     cmd_max_exec_time: String,
     devpod_color: String,
     devpod_symbol: String,
+    k8s_color: String,
     error_color: String,
     git_action_color: String,
     git_auth_color: String,
@@ -45,10 +48,12 @@ struct EnvDefaults {
 impl EnvDefaults {
     fn new() -> Self {
         Self {
+            aws_color: env::var("SLICK_PROMPT_AWS_COLOR").unwrap_or_else(|_| "7".into()),
             cmd_max_exec_time: env::var("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
                 .unwrap_or_else(|_| "5".into()),
             devpod_color: env::var("SLICK_PROMPT_DEVPOD_COLOR").unwrap_or_else(|_| "7".into()),
             devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_else(|_| "".into()),
+            k8s_color: env::var("SLICK_PROMPT_K8S_COLOR").unwrap_or_else(|_| "7".into()),
             error_color: env::var("SLICK_PROMPT_ERROR_COLOR").unwrap_or_else(|_| "196".into()),
             git_action_color: env::var("SLICK_PROMPT_GIT_ACTION_COLOR")
                 .unwrap_or_else(|_| "3".into()),
@@ -58,7 +63,8 @@ impl EnvDefaults {
                 .unwrap_or_else(|_| "🔒".into()),
             git_branch_color: env::var("SLICK_PROMPT_GIT_BRANCH_COLOR")
                 .unwrap_or_else(|_| "3".into()),
-            git_branch_symbol: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL").unwrap_or_default(),
+            git_branch_symbol: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL")
+                .unwrap_or_else(|_| "".into()),
             git_fetch: env::var("SLICK_PROMPT_GIT_FETCH").unwrap_or_else(|_| "1".into()),
             git_master_branch_color: env::var("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR")
                 .unwrap_or_else(|_| "160".into()),
@@ -100,6 +106,7 @@ pub fn get_env(e: &str) -> &str {
     let cache = ENV_CACHE.get_or_init(EnvDefaults::new);
 
     match e {
+        "SLICK_PROMPT_AWS_COLOR" => &cache.aws_color,
         "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => &cache.cmd_max_exec_time,
         "SLICK_PROMPT_DEVPOD_COLOR" => &cache.devpod_color,
         "SLICK_PROMPT_DEVPOD_SYMBOL" => &cache.devpod_symbol,
@@ -118,6 +125,7 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_GIT_STATUS_COLOR" => &cache.git_status_color,
         "SLICK_PROMPT_GIT_UNAME_COLOR" => &cache.git_uname_color,
         "SLICK_PROMPT_NON_BREAKING_SPACE" => &cache.non_breaking_space,
+        "SLICK_PROMPT_K8S_COLOR" => &cache.k8s_color,
         "SLICK_PROMPT_PATH_COLOR" => &cache.path_color,
         "SLICK_PROMPT_PYTHON_ENV_COLOR" => &cache.python_env_color,
         "SLICK_PROMPT_ROOT_COLOR" => &cache.root_color,

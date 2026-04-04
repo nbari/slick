@@ -71,12 +71,19 @@ export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
 # Rendered as: (<symbol> <workspace-id>)
 #export SLICK_PROMPT_DEVPOD_SYMBOL=""
 
+# AWS and Kubernetes markers are text-only: (aws ...) and (k8s ...)
+# There are no symbol variables for these markers.
+
 # ==========================================
 # COLORS (256-color palette or named colors)
 # ==========================================
 # Named colors: black, red, green, yellow, blue, magenta, cyan, white
 # Or use numbers: 0-255 from 256-color palette
 # See: https://upload.wikimedia.org/wikipedia/commons/1/15/Xterm_256color_chart.svg
+
+# AWS marker color
+# Default: 7 (white/gray)
+#export SLICK_PROMPT_AWS_COLOR=7
 
 # Error message color
 # Default: 196 (bright red)
@@ -85,6 +92,10 @@ export SLICK_PROMPT_ERROR_COLOR=196
 # DevPod marker color
 # Default: 7 (white/gray)
 #export SLICK_PROMPT_DEVPOD_COLOR=7
+
+# Kubernetes marker color
+# Default: 7 (white/gray)
+#export SLICK_PROMPT_K8S_COLOR=7
 
 # Path color
 # Default: 74 (cyan/teal)
@@ -128,8 +139,8 @@ export SLICK_PROMPT_TIME_ELAPSED_COLOR=3
 export SLICK_PROMPT_GIT_BRANCH_COLOR=3
 
 # Git branch prefix symbol
-# Default: empty
-export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""
+# Default:  (set to "" to disable)
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'
 
 # Git master/main branch color
 # Default: 160 (red)

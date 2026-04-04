@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6
 
       - name: Get package name from Cargo.toml
         id: package
@@ -133,7 +133,7 @@ jobs:
       # Skip release if the tag starts with 't'
       - name: Release
         if: startsWith(github.ref, 'refs/tags/') && !startsWith(github.ref_name, 't')
-        uses: softprops/action-gh-release@v2.6.1
+        uses: softprops/action-gh-release@v2
         with:
           draft: false
           files: |-
@@ -152,7 +152,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

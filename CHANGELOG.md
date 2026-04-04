@@ -1,3 +1,16 @@
+## 0.19.0 (2026-04-04)
+
+### Added
+- Added AWS prompt context detection from `AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, and credential env vars with neutral text-only markers like `(aws prod)` and `(aws eu-central-1)`.
+- Added Kubernetes prompt context detection from `KUBECONFIG`, rendering the basename of the first kubeconfig path as a text-only marker like `(k8s dev-cluster)`.
+- Expanded `scripts/preview_prompt.zsh` and `just preview` to simulate AWS and Kubernetes contexts alongside Toolbx, DevPod, and Python environments.
+
+### Changed
+- Refactored prompt context detection and parsing into `src/context.rs`, reducing the amount of context-specific logic living in `src/prompt.rs`.
+- Kept AWS and Kubernetes markers text-only in v1 to avoid extra font dependencies and symbol configuration surface.
+- Added regression coverage for AWS and Kubernetes marker rendering, ordering, and transient prompt output.
+- Changed the default git branch symbol to ``; set `SLICK_PROMPT_GIT_BRANCH_SYMBOL=""` to disable it.
+
 ## 0.18.0 (2026-04-04)
 
 ### Added

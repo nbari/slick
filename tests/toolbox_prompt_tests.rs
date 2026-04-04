@@ -202,7 +202,7 @@ fn test_virtualenv_marker_uses_configured_color() {
 }
 
 #[test]
-fn test_git_branch_renders_without_symbol_by_default() {
+fn test_git_branch_renders_with_default_symbol() {
     let output = Command::new(get_slick_binary())
         .args([
             "prompt",
@@ -222,14 +222,13 @@ fn test_git_branch_renders_without_symbol_by_default() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains(
-        "%F{3}feature/test
+        "%F{3} feature/test
 "
     ));
-    assert!(!stdout.contains(" feature/test"));
 }
 
 #[test]
-fn test_git_branch_renders_with_configured_symbol() {
+fn test_git_branch_symbol_can_be_disabled_with_empty_string() {
     let output = Command::new(get_slick_binary())
         .args([
             "prompt",
@@ -242,7 +241,7 @@ fn test_git_branch_renders_with_configured_symbol() {
             "-d",
             &prompt_data_with_branch("main"),
         ])
-        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "")
+        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "")
         .output()
         .expect("Failed to execute slick");
 
@@ -250,7 +249,35 @@ fn test_git_branch_renders_with_configured_symbol() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains(
-        "%F{160} main
+        "%F{160}main
+"
+    ));
+    assert!(!stdout.contains(" main"));
+}
+
+#[test]
+fn test_git_branch_renders_with_custom_symbol() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("main"),
+        ])
+        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "git:")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{160}git: main
 "
     ));
 }
@@ -364,7 +391,6 @@ fn test_transient_prompt_renders_single_line_with_timestamp() {
             "-d",
             &prompt_data("feature/test", "M 10"),
         ])
-        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "")
         .output()
         .expect("Failed to execute slick");
 
@@ -408,5 +434,116 @@ fn test_transient_prompt_keeps_context_markers_but_stays_compact() {
     assert!(stdout.contains("%F{3}(▣ codex) "));
     assert!(stdout.contains("%F{7}(project) "));
     assert!(!stdout.contains("[staged]"));
+    assert!(!stdout.contains('\n'));
+}
+
+#[test]
+fn test_aws_marker_renders_before_path_with_profile() {
+    let output = Command::new(get_slick_binary())
+        .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
+        .env("AWS_PROFILE", "prod")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let aws_index = stdout
+        .find("(aws prod)")
+        .expect("aws marker should be present");
+    let path_index = stdout.find("%~").expect("path marker should be present");
+
+    assert!(aws_index < path_index);
+    assert!(stdout.contains("%F{7}(aws prod) "));
+}
+
+#[test]
+fn test_k8s_marker_renders_kubeconfig_basename_before_path() {
+    let output = Command::new(get_slick_binary())
+        .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
+        .env("KUBECONFIG", "/tmp/dev-cluster:/tmp/prod-cluster")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let k8s_index = stdout
+        .find("(k8s dev-cluster)")
+        .expect("k8s marker should be present");
+    let path_index = stdout.find("%~").expect("path marker should be present");
+
+    assert!(k8s_index < path_index);
+    assert!(stdout.contains("%F{7}(k8s dev-cluster) "));
+}
+
+#[test]
+fn test_context_marker_order_includes_aws_and_k8s() {
+    let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
+
+    let output = Command::new(get_slick_binary())
+        .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
+        .env("SLICK_TEST_TOOLBOXENV_PATH", &toolboxenv_path)
+        .env("SLICK_TEST_CONTAINERENV_PATH", &containerenv_path)
+        .env("DEVPOD", "true")
+        .env("DEVPOD_WORKSPACE_ID", "hfile")
+        .env("AWS_PROFILE", "prod")
+        .env("KUBECONFIG", "/tmp/dev-cluster")
+        .env("VIRTUAL_ENV", "/tmp/venvs/project")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let toolbox_index = stdout
+        .find("(▣ codex)")
+        .expect("toolbox marker should be present");
+    let devpod_index = stdout
+        .find("( hfile)")
+        .expect("devpod marker should be present");
+    let aws_index = stdout
+        .find("(aws prod)")
+        .expect("aws marker should be present");
+    let k8s_index = stdout
+        .find("(k8s dev-cluster)")
+        .expect("k8s marker should be present");
+    let python_index = stdout
+        .find("(project)")
+        .expect("python marker should be present");
+
+    assert!(toolbox_index < devpod_index);
+    assert!(devpod_index < aws_index);
+    assert!(aws_index < k8s_index);
+    assert!(k8s_index < python_index);
+}
+
+#[test]
+fn test_transient_prompt_includes_aws_and_k8s_markers() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "--transient",
+            "--transient-timestamp",
+            "2026-04-04T16:12:03+02:00",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("develop"),
+        ])
+        .env("AWS_REGION", "eu-central-1")
+        .env("KUBECONFIG", "/tmp/dev-cluster")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("%F{7}(aws eu-central-1) "));
+    assert!(stdout.contains("%F{7}(k8s dev-cluster) "));
     assert!(!stdout.contains('\n'));
 }

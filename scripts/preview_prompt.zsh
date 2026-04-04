@@ -10,6 +10,10 @@ SLICK_PREVIEW_ELAPSED=${SLICK_PREVIEW_ELAPSED:-0}
 SLICK_PREVIEW_INTERVAL=${SLICK_PREVIEW_INTERVAL:-1}
 SLICK_PREVIEW_TOOLBOX_NAME=${SLICK_PREVIEW_TOOLBOX_NAME:-codex}
 SLICK_PREVIEW_DEVPOD_NAME=${SLICK_PREVIEW_DEVPOD_NAME:-hfile}
+SLICK_PREVIEW_AWS_PROFILE=${SLICK_PREVIEW_AWS_PROFILE:-${SLICK_PREVIEW_AWS_LABEL:-prod}}
+SLICK_PREVIEW_AWS_REGION=${SLICK_PREVIEW_AWS_REGION:-eu-central-1}
+SLICK_PREVIEW_KUBECONFIG_PRIMARY=${SLICK_PREVIEW_KUBECONFIG_PRIMARY:-${SLICK_PREVIEW_KUBECONFIG:-/tmp/dev-cluster}}
+SLICK_PREVIEW_KUBECONFIG_SECONDARY=${SLICK_PREVIEW_KUBECONFIG_SECONDARY:-/tmp/prod-cluster}
 SLICK_PREVIEW_PYTHON_ENV=${SLICK_PREVIEW_PYTHON_ENV:-venv}
 
 PROMPT_DATA=$(printf '{"action":"","auth_failed":false,"branch":"%s","remote":[],"staged":false,"status":"%s","u_name":""}' \
@@ -29,16 +33,24 @@ usage() {
 Usage: zsh scripts/preview_prompt.zsh [--watch]
 
 Renders prompt previews for the common context markers using the current
-SLICK_PROMPT_* environment variables plus simulated Toolbx, DevPod, and Python
-contexts.
+SLICK_PROMPT_* environment variables plus simulated Toolbx, DevPod, AWS, k8s,
+and Python contexts.
 
 Optional environment overrides:
   SLICK_PREVIEW_BRANCH=main
   SLICK_PREVIEW_STATUS="M 2"
   SLICK_PREVIEW_TOOLBOX_NAME=toolbox
   SLICK_PREVIEW_DEVPOD_NAME=workspace
+  SLICK_PREVIEW_AWS_PROFILE=prod
+  SLICK_PREVIEW_AWS_REGION=eu-west-1
+  SLICK_PREVIEW_KUBECONFIG_PRIMARY=/tmp/dev-cluster
+  SLICK_PREVIEW_KUBECONFIG_SECONDARY=/tmp/prod-cluster
   SLICK_PREVIEW_PYTHON_ENV=.venv
   SLICK_PREVIEW_INTERVAL=2
+
+Compatibility aliases still supported:
+  SLICK_PREVIEW_AWS_LABEL
+  SLICK_PREVIEW_KUBECONFIG
 USAGE
 }
 
@@ -56,12 +68,27 @@ setup_toolbox_fixture() {
   printf 'engine="podman"\nname="%s"\nid="preview"\n' "$SLICK_PREVIEW_TOOLBOX_NAME" > "$TOOLBOX_TMP/.containerenv"
 }
 
+preview_kubeconfig() {
+  if [[ -n $SLICK_PREVIEW_KUBECONFIG_SECONDARY ]]; then
+    printf '%s:%s' "$SLICK_PREVIEW_KUBECONFIG_PRIMARY" "$SLICK_PREVIEW_KUBECONFIG_SECONDARY"
+  else
+    printf '%s' "$SLICK_PREVIEW_KUBECONFIG_PRIMARY"
+  fi
+}
+
 render_prompt() {
   local -a env_args
   env_args=(
     env
+    -u AWS_ACCESS_KEY_ID
+    -u AWS_DEFAULT_REGION
+    -u AWS_PROFILE
+    -u AWS_REGION
+    -u AWS_SECRET_ACCESS_KEY
+    -u AWS_SESSION_TOKEN
     -u DEVPOD
     -u DEVPOD_WORKSPACE_ID
+    -u KUBECONFIG
     -u VIRTUAL_ENV
     -u VIRTUAL_ENV_PROMPT
     -u PYENV_VERSION
@@ -93,6 +120,9 @@ show_example() {
 }
 
 show_examples() {
+  local kubeconfig
+  kubeconfig=$(preview_kubeconfig)
+
   print -P -- "%BPrompt Preview%b"
   print
 
@@ -103,13 +133,28 @@ show_examples() {
   show_example "DevPod" \
     DEVPOD=true \
     DEVPOD_WORKSPACE_ID="$SLICK_PREVIEW_DEVPOD_NAME"
+  show_example "AWS (profile)" \
+    AWS_PROFILE="$SLICK_PREVIEW_AWS_PROFILE"
+  show_example "AWS (region fallback)" \
+    AWS_REGION="$SLICK_PREVIEW_AWS_REGION"
+  show_example "Kubernetes" \
+    KUBECONFIG="$SLICK_PREVIEW_KUBECONFIG_PRIMARY"
+  show_example "Kubernetes (multi-file)" \
+    KUBECONFIG="$kubeconfig"
   show_example "Toolbx + Python" \
     SLICK_TEST_TOOLBOXENV_PATH="$TOOLBOX_TMP/.toolboxenv" \
     SLICK_TEST_CONTAINERENV_PATH="$TOOLBOX_TMP/.containerenv" \
     VIRTUAL_ENV="/tmp/venvs/$SLICK_PREVIEW_PYTHON_ENV"
-  show_example "DevPod + Python" \
+  show_example "DevPod + AWS + Kubernetes" \
     DEVPOD=true \
     DEVPOD_WORKSPACE_ID="$SLICK_PREVIEW_DEVPOD_NAME" \
+    AWS_REGION="$SLICK_PREVIEW_AWS_REGION" \
+    KUBECONFIG="$kubeconfig"
+  show_example "Toolbx + AWS + Kubernetes + Python" \
+    SLICK_TEST_TOOLBOXENV_PATH="$TOOLBOX_TMP/.toolboxenv" \
+    SLICK_TEST_CONTAINERENV_PATH="$TOOLBOX_TMP/.containerenv" \
+    AWS_PROFILE="$SLICK_PREVIEW_AWS_PROFILE" \
+    KUBECONFIG="$kubeconfig" \
     VIRTUAL_ENV="/tmp/venvs/$SLICK_PREVIEW_PYTHON_ENV"
 }
 

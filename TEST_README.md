@@ -39,21 +39,21 @@ just test
 13. **SSH auth prompt protection** (prevents password/key prompts) 🔒
 14. Git user name detection
 
-### Cargo Test Suite (84 tests)
+### Cargo Test Suite (98 tests)
 
 ```bash
 cargo test
 ```
 
-- 26 prompt/lib tests (`src/lib.rs` and `src/prompt.rs`)
+- 35 prompt/lib/context tests (`src/lib.rs`, `src/context.rs`, and `src/prompt.rs`)
 - 12 auth cache tests  
 - 9 environment tests
 - 8 git integration tests
 - 5 git unit tests
 - 6 elapsed-time prompt tests
-- 18 prompt rendering tests
+- 23 prompt rendering tests
 
-**Total: 103 checks** (84 cargo tests + 19 integration tests)
+**Total: 117 checks** (98 cargo tests + 19 integration tests)
 
 ## Auth/Credential Protection
 
@@ -84,7 +84,7 @@ just build       # Build release binary
 just fmt         # Format code
 just clean       # Clean build artifacts
 just integration # Run integration tests only
-just preview     # Render example prompt contexts
+just preview     # Render Toolbx/DevPod/AWS/Kubernetes/Python prompt contexts
 just preview-watch # Refresh the prompt preview continuously
 just version     # Show version
 ```
@@ -167,7 +167,7 @@ just check
 
 Runs:
 - ✅ Cargo clippy (strict)
-- ✅ Cargo tests (84 tests)
+- ✅ Cargo tests (98 tests)
 - ✅ Release build
 - ✅ Integration tests (19 tests)
 
@@ -188,8 +188,8 @@ Runs:
 just test    # Everything
 ```
 
-**Total coverage:** 103 checks
-- 84 Cargo tests ✅
+**Total coverage:** 117 checks
+- 98 Cargo tests ✅
 - 19 Integration tests ✅
   - Including **SSH auth prompt protection** 🔒
   - Including **SSH timeout protection** ⚡

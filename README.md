@@ -200,6 +200,8 @@ export SLICK_PROMPT_PATH_COLOR=blue
 export SLICK_PROMPT_SYMBOL_COLOR=magenta
 export SLICK_PROMPT_PYTHON_ENV_COLOR=7
 export SLICK_PROMPT_DEVPOD_COLOR=7
+export SLICK_PROMPT_AWS_COLOR=7
+export SLICK_PROMPT_K8S_COLOR=7
 
 # Toolbx marker
 export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"
@@ -228,7 +230,7 @@ export SLICK_PROMPT_ROOT_SYMBOL="#"            # Root user symbol
 export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"       # Git ahead symbol
 export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
-export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""       # Optional prefix before branch name, e.g. $'\ue0a0'
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'  # Default; set to "" to disable
 export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"         # Toolbx marker symbol
 export SLICK_PROMPT_DEVPOD_SYMBOL=""          # DevPod marker symbol
 ```
@@ -236,8 +238,10 @@ export SLICK_PROMPT_DEVPOD_SYMBOL=""          # DevPod marker symbol
 #### Colors
 ```bash
 # Colors can be named (red, blue, etc.) or numbers (0-255)
+export SLICK_PROMPT_AWS_COLOR=7               # AWS marker color
 export SLICK_PROMPT_ERROR_COLOR=196            # Error message color
 export SLICK_PROMPT_DEVPOD_COLOR=7             # DevPod marker color
+export SLICK_PROMPT_K8S_COLOR=7                # Kubernetes marker color
 export SLICK_PROMPT_PATH_COLOR=74              # Directory path color
 export SLICK_PROMPT_PYTHON_ENV_COLOR=7         # Virtualenv/pyenv color
 export SLICK_PROMPT_SYMBOL_COLOR=5             # Prompt symbol color
@@ -260,7 +264,7 @@ export SLICK_PROMPT_GIT_UNAME_COLOR=8          # Git username color
 export SLICK_PROMPT_GIT_AUTH_COLOR=red         # Git auth failed color
 ```
 
-If `SLICK_PROMPT_GIT_BRANCH_SYMBOL` is set, it is printed immediately before the branch name, for example ` main`. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`. It uses the same color as the branch text: `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` for `main`/`master`, and `SLICK_PROMPT_GIT_BRANCH_COLOR` for other branches.
+`SLICK_PROMPT_GIT_BRANCH_SYMBOL` is printed immediately before the branch name, for example ` main`. The default is ``. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`, or disable it with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""`. It uses the same color as the branch text: `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` for `main`/`master`, and `SLICK_PROMPT_GIT_BRANCH_COLOR` for other branches.
 
 `PIPENV_ACTIVE_COLOR` is still honored as a legacy fallback, but `SLICK_PROMPT_PYTHON_ENV_COLOR` is the preferred setting for Python environments.
 
@@ -303,25 +307,29 @@ See more examples in [envrc](envrc).
 
 ## Prompt Preview
 
-Use the preview helper to render the prompt with simulated Toolbx, DevPod, and Python contexts while keeping your current `SLICK_PROMPT_*` settings:
+Use the preview helper to render the prompt with simulated Toolbx, DevPod, AWS, Kubernetes, and Python contexts while keeping your current `SLICK_PROMPT_*` settings:
 
 ```bash
 just preview
 just preview-watch
 ```
 
-Optional overrides let you tune the sample names and branch data:
+Optional overrides let you tune the sample names and branch data, including dedicated AWS profile/region and multi-kubeconfig previews:
 
 ```bash
 SLICK_PREVIEW_BRANCH=main \
 SLICK_PREVIEW_STATUS="M 2" \
 SLICK_PREVIEW_TOOLBOX_NAME=toolbox \
 SLICK_PREVIEW_DEVPOD_NAME=workspace \
+SLICK_PREVIEW_AWS_PROFILE=prod \
+SLICK_PREVIEW_AWS_REGION=eu-west-1 \
+SLICK_PREVIEW_KUBECONFIG_PRIMARY=/tmp/dev-cluster \
+SLICK_PREVIEW_KUBECONFIG_SECONDARY=/tmp/prod-cluster \
 SLICK_PREVIEW_PYTHON_ENV=.venv \
 just preview
 ```
 
-The helper lives at `scripts/preview_prompt.zsh` and uses `print -P` so the prompt colors render as they would in `zsh`.
+The helper lives at `scripts/preview_prompt.zsh` and uses `print -P` so the prompt colors render as they would in `zsh`. It now shows dedicated AWS profile/region examples and both single-file and multi-file Kubernetes previews.
 
 ## Transient Prompt
 
@@ -363,6 +371,33 @@ Configure the DevPod marker:
 ```bash
 export SLICK_PROMPT_DEVPOD_SYMBOL=""      # Default
 export SLICK_PROMPT_DEVPOD_COLOR=7        # Default
+```
+
+## AWS Detection
+
+Slick detects AWS context from environment variables. It prefers `AWS_PROFILE`, then `AWS_REGION`, then `AWS_DEFAULT_REGION`, and falls back to `(aws)` when only credential variables are present. The marker is text-only and rendered before the path.
+
+**Examples:**
+```bash
+(aws prod) ~/projects/slick main
+❯
+
+(aws eu-central-1) ~/projects/slick main
+❯
+```
+
+Configure the AWS marker color:
+```bash
+export SLICK_PROMPT_AWS_COLOR=7           # Default
+```
+
+## Kubernetes Detection
+
+Slick detects Kubernetes context when `KUBECONFIG` is set. It uses the basename of the first kubeconfig path, so `/tmp/dev-cluster:/tmp/prod-cluster` renders as `(k8s dev-cluster)`. If the basename cannot be resolved, it falls back to `(k8s)`.
+
+Configure the Kubernetes marker color:
+```bash
+export SLICK_PROMPT_K8S_COLOR=7           # Default
 ```
 
 ## 🔒 SSH Authentication Detection
