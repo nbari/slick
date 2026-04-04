@@ -1,3 +1,17 @@
+## 0.20.0 (2026-04-04)
+
+### Added
+- Added `SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR` as the preferred color setting for `main` and `master` branches while keeping `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` as a deprecated compatibility alias.
+- Added `SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR` so the git branch symbol can be colored independently from the branch text.
+
+### Changed
+- Changed the default git branch symbol color to `2` (green) so git repositories stand out more clearly while staying aligned with the prompt's numeric color defaults.
+- Updated branch rendering so the branch symbol and branch name no longer have to share the same color.
+- Refreshed the prompt help text, examples, and sample env config to document the new branch color settings.
+
+### Fixed
+- Made `./test.sh` create local test commits with `commit.gpgsign=false` so the integration suite does not fail on systems using global SSH commit signing via 1Password or similar agents.
+
 ## 0.19.0 (2026-04-04)
 
 ### Added

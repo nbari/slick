@@ -67,6 +67,8 @@ create_test_repo() {
     git init -q
     git config user.email "test@example.com"
     git config user.name "Test User"
+    # Avoid inheriting global signing config such as 1Password SSH signing.
+    git config commit.gpgsign false
     echo "# Test" >README.md
     git add README.md
     git commit -q -m "Initial commit"
@@ -243,6 +245,7 @@ cd "$TEST_DIR/test15"
 git init -q
 git config user.email "test@example.com"
 git config user.name "Test"
+git config commit.gpgsign false
 OUT=$(SLICK_PROMPT_GIT_FETCH=0 "$SLICK" precmd 2>&1)
 pass "Handles empty repo gracefully"
 

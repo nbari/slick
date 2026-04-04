@@ -142,9 +142,15 @@ export SLICK_PROMPT_GIT_BRANCH_COLOR=3
 # Default:  (set to "" to disable)
 export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'
 
-# Git master/main branch color
+# Git branch prefix symbol color
+# Default: 2 (green)
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2
+
+# Git main/master branch color
 # Default: 160 (red)
-export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160
+export SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR=160
+# Deprecated fallback alias still supported:
+#export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160
 
 # Git action color (merge, rebase, etc.)
 # Default: 3 (yellow)

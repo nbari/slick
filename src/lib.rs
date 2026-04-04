@@ -21,8 +21,9 @@ struct EnvDefaults {
     git_auth_symbol: String,
     git_branch_color: String,
     git_branch_symbol: String,
+    git_branch_symbol_color: String,
     git_fetch: String,
-    git_master_branch_color: String,
+    git_main_branch_color: String,
     git_remote_color: String,
     git_remote_ahead: String,
     git_remote_behind: String,
@@ -65,8 +66,11 @@ impl EnvDefaults {
                 .unwrap_or_else(|_| "3".into()),
             git_branch_symbol: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL")
                 .unwrap_or_else(|_| "".into()),
+            git_branch_symbol_color: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR")
+                .unwrap_or_else(|_| "2".into()),
             git_fetch: env::var("SLICK_PROMPT_GIT_FETCH").unwrap_or_else(|_| "1".into()),
-            git_master_branch_color: env::var("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR")
+            git_main_branch_color: env::var("SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR")
+                .or_else(|_| env::var("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"))
                 .unwrap_or_else(|_| "160".into()),
             git_remote_color: env::var("SLICK_PROMPT_GIT_REMOTE_COLOR")
                 .unwrap_or_else(|_| "6".into()),
@@ -116,8 +120,11 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_GIT_AUTH_SYMBOL" => &cache.git_auth_symbol,
         "SLICK_PROMPT_GIT_BRANCH_COLOR" => &cache.git_branch_color,
         "SLICK_PROMPT_GIT_BRANCH_SYMBOL" => &cache.git_branch_symbol,
+        "SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR" => &cache.git_branch_symbol_color,
         "SLICK_PROMPT_GIT_FETCH" => &cache.git_fetch,
-        "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => &cache.git_master_branch_color,
+        "SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR" | "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => {
+            &cache.git_main_branch_color
+        }
         "SLICK_PROMPT_GIT_REMOTE_COLOR" => &cache.git_remote_color,
         "SLICK_PROMPT_GIT_REMOTE_AHEAD" => &cache.git_remote_ahead,
         "SLICK_PROMPT_GIT_REMOTE_BEHIND" => &cache.git_remote_behind,
@@ -169,6 +176,9 @@ mod tests {
         assert_eq!(get_env("SLICK_PROMPT_ERROR_COLOR"), "196");
         assert_eq!(get_env("SLICK_PROMPT_PATH_COLOR"), "74");
         assert_eq!(get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"), "3");
+        assert_eq!(get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR"), "2");
+        assert_eq!(get_env("SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR"), "160");
+        assert_eq!(get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"), "160");
     }
 
     #[test]

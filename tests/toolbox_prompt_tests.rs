@@ -222,7 +222,7 @@ fn test_git_branch_renders_with_default_symbol() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains(
-        "%F{3} feature/test
+        "%F{2} %F{3}feature/test
 "
     ));
 }
@@ -277,7 +277,89 @@ fn test_git_branch_renders_with_custom_symbol() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains(
-        "%F{160}git: main
+        "%F{2}git: %F{160}main
+"
+    ));
+}
+
+#[test]
+fn test_git_branch_symbol_uses_custom_color() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("feature/test"),
+        ])
+        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR", "42")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{42} %F{3}feature/test
+"
+    ));
+}
+
+#[test]
+fn test_git_main_branch_color_prefers_main_env_var() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("main"),
+        ])
+        .env("SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR", "42")
+        .env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR", "160")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{2} %F{42}main
+"
+    ));
+}
+
+#[test]
+fn test_git_main_branch_color_falls_back_to_master_env_var() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("main"),
+        ])
+        .env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR", "99")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{2} %F{99}main
 "
     ));
 }
@@ -398,7 +480,7 @@ fn test_transient_prompt_renders_single_line_with_timestamp() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("%F{8}2026-04-04T16:12:03+02:00 "));
-    assert!(stdout.contains("%F{74}%~ %F{3} feature/test %F{196}$"));
+    assert!(stdout.contains("%F{74}%~ %F{2} %F{3}feature/test %F{196}$"));
     assert!(!stdout.contains("[M 10]"));
     assert!(!stdout.contains('\n'));
 }

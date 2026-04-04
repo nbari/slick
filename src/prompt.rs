@@ -31,15 +31,6 @@ fn is_remote() -> bool {
     env::var("SSH_CONNECTION").is_ok()
 }
 
-#[must_use]
-fn format_branch_marker(symbol: &str, branch: &str) -> String {
-    if symbol.is_empty() {
-        branch.to_string()
-    } else {
-        format!("{symbol} {branch}")
-    }
-}
-
 fn append_identity_prefix(prompt: &mut String, is_root_user: bool, is_remote_user: bool) {
     if is_remote_user {
         if is_root_user {
@@ -68,14 +59,23 @@ fn append_branch(prompt: &mut String, branch: &str) {
         return;
     }
 
-    let branch_marker = format_branch_marker(get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL"), branch);
     let branch_color = if branch == "master" || branch == "main" {
-        get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR")
+        get_env("SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR")
     } else {
         get_env("SLICK_PROMPT_GIT_BRANCH_COLOR")
     };
+    let branch_symbol = get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL");
 
-    let _ = write!(prompt, "%F{{{branch_color}}}{branch_marker}");
+    if !branch_symbol.is_empty() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR"),
+            branch_symbol
+        );
+    }
+
+    let _ = write!(prompt, "%F{{{branch_color}}}{branch}");
 }
 
 fn prompt_symbol(keymap: &str, last_return_code: &str, is_root_user: bool) -> (String, String) {
@@ -335,15 +335,12 @@ pub fn display(matches: &ArgMatches) {
 
 #[cfg(test)]
 mod tests {
-    use super::format_branch_marker;
+    use super::append_branch;
 
     #[test]
-    fn test_format_branch_marker_with_symbol() {
-        assert_eq!(format_branch_marker("", "main"), " main");
-    }
-
-    #[test]
-    fn test_format_branch_marker_without_symbol() {
-        assert_eq!(format_branch_marker("", "main"), "main");
+    fn test_append_branch_uses_separate_symbol_color() {
+        let mut prompt = String::new();
+        append_branch(&mut prompt, "main");
+        assert_eq!(prompt, "%F{2} %F{160}main");
     }
 }

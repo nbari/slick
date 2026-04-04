@@ -16,7 +16,9 @@ const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_GIT_AUTH_SYMBOL",
     "SLICK_PROMPT_GIT_BRANCH_COLOR",
     "SLICK_PROMPT_GIT_BRANCH_SYMBOL",
+    "SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR",
     "SLICK_PROMPT_GIT_FETCH",
+    "SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR",
     "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR",
     "SLICK_PROMPT_GIT_REMOTE_COLOR",
     "SLICK_PROMPT_GIT_REMOTE_AHEAD",
@@ -65,6 +67,8 @@ fn test_get_env_color_values_are_numeric_or_named() {
         "SLICK_PROMPT_DEVPOD_COLOR",
         "SLICK_PROMPT_ERROR_COLOR",
         "SLICK_PROMPT_GIT_BRANCH_COLOR",
+        "SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR",
+        "SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR",
         "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR",
         "SLICK_PROMPT_GIT_STATUS_COLOR",
         "SLICK_PROMPT_K8S_COLOR",
@@ -117,6 +121,9 @@ fn test_get_env_special_chars() {
 
     let git_branch_symbol = get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL");
     assert_eq!(git_branch_symbol, "");
+
+    let git_branch_symbol_color = get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR");
+    assert_eq!(git_branch_symbol_color, "2");
 }
 
 #[test]

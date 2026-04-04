@@ -124,6 +124,7 @@ export SLICK_PROMPT_TOOLBOX_COLOR=yellow
 
 # Optional git branch prefix
 export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2
 ```
 
 ### All Environment Variables
@@ -170,7 +171,8 @@ export SLICK_PROMPT_TOOLBOX_COLOR=3            # Toolbx marker color
 #### Git Colors
 ```bash
 export SLICK_PROMPT_GIT_BRANCH_COLOR=3         # Branch name color
-export SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160  # master/main branch color
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2  # Git branch symbol color
+export SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR=160  # main/master branch color
 export SLICK_PROMPT_GIT_ACTION_COLOR=3         # Git action (merge, rebase) color
 export SLICK_PROMPT_GIT_STATUS_COLOR=5         # Modified files color
 export SLICK_PROMPT_GIT_STAGED_COLOR=7         # Staged files color
@@ -179,7 +181,9 @@ export SLICK_PROMPT_GIT_UNAME_COLOR=8          # Git username color
 export SLICK_PROMPT_GIT_AUTH_COLOR=red         # Git auth failed color
 ```
 
-`SLICK_PROMPT_GIT_BRANCH_SYMBOL` is printed immediately before the branch name, for example ` main`. The default is ``. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`, or disable it with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""`. It uses the same color as the branch text: `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` for `main`/`master`, and `SLICK_PROMPT_GIT_BRANCH_COLOR` for other branches.
+`SLICK_PROMPT_GIT_BRANCH_SYMBOL` is printed immediately before the branch name, for example ` main`. The default is ``. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`, or disable it with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""`.
+
+The branch symbol color comes from `SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR`, which defaults to `2` (green). The branch text uses `SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR` for `main`/`master`, and `SLICK_PROMPT_GIT_BRANCH_COLOR` for other branches. `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` is still supported as a deprecated fallback alias for compatibility.
 
 `PIPENV_ACTIVE_COLOR` is still honored as a legacy fallback, but `SLICK_PROMPT_PYTHON_ENV_COLOR` is the preferred setting for Python environments.
 
