@@ -188,12 +188,13 @@ Runs:
 just test    # Everything
 ```
 
-**Total coverage:** 117 checks
+**Total coverage:** 118 checks
 - 98 Cargo tests ✅
-- 19 Integration tests ✅
+- 20 Integration tests ✅
   - Including **SSH auth prompt protection** 🔒
   - Including **SSH timeout protection** ⚡
-  - Including **load.zsh preexec/transient regression guard** 🛡️
+  - Including **slick.zsh preexec/transient regression guard** 🛡️
+  - Including **load.zsh and slick.plugin.zsh wrapper guards** 🔌
 - All passing ✅
 
 **Key Features Tested:**

@@ -32,134 +32,49 @@ cargo build --release
 source load.zsh
 ```
 
-The `load.zsh` script automatically detects the slick binary and sets up the prompt.
+`load.zsh` is the repo-local development wrapper. It prefers `./target/release/slick` and then sources [`slick.zsh`](slick.zsh).
 
 ### Production Setup
 
-Add this to your `.zshrc` or adapt [`load.zsh`](load.zsh):
+Source the reusable loader from your dotfiles:
 
 ```sh
-zmodload zsh/datetime
-autoload -Uz add-zsh-hook
-
-typeset -g slick_prompt_data
-typeset -g slick_prompt_fd
-typeset -g slick_prompt_timestamp
-typeset -g slick_prompt_elapsed
-
-SLICK_PATH=$HOME/.cargo/bin/slick
-
-function slick_prompt_transient_enabled {
-    [[ "${SLICK_PROMPT_TRANSIENT:-1}" != "0" ]]
-}
-
-function slick_prompt_rfc3339_timestamp {
-    local timestamp
-
-    strftime -s timestamp '%Y-%m-%dT%H:%M:%S%z' $EPOCHSECONDS
-    print -r -- "${timestamp[1,-3]}:${timestamp[-2,-1]}"
-}
-
-function slick_prompt_render {
-    local exit_status=${1:-0}
-    local transient=${2:-0}
-    local transient_timestamp=${3:-}
-    local -a args
-
-    args=(
-        "$SLICK_PATH"
-        prompt
-        -k "${KEYMAP:-main}"
-        -r "$exit_status"
-        -d "${slick_prompt_data:-}"
-    )
-
-    if [[ -n "${slick_prompt_elapsed:-}" ]]; then
-        args+=(-e "$slick_prompt_elapsed")
-    fi
-
-    if [[ "$transient" == 1 ]]; then
-        args+=(--transient)
-        if [[ -n "$transient_timestamp" ]]; then
-            args+=(--transient-timestamp "$transient_timestamp")
-        fi
-    fi
-
-    "${args[@]}"
-}
-
-function slick_prompt_refresh {
-    local exit_status=$?
-    local line
-
-    if read -r -u $1 line; then
-        slick_prompt_data="$line"
-        PROMPT=$(slick_prompt_render "$exit_status")
-        zle && zle reset-prompt
-        return
-    fi
-
-    unset slick_prompt_timestamp
-    unset slick_prompt_elapsed
-    zle -F $1
-    exec {1}<&-
-}
-
-function zle-line-init zle-keymap-select {
-    PROMPT=$(slick_prompt_render 0)
-    zle && zle reset-prompt
-}
-
-function slick_prompt_accept_line {
-    local exit_status=$?
-    local transient_timestamp
-
-    if slick_prompt_transient_enabled; then
-        transient_timestamp=$(slick_prompt_rfc3339_timestamp)
-        PROMPT=$(slick_prompt_render "$exit_status" 1 "$transient_timestamp")
-        zle reset-prompt
-    fi
-
-    zle .accept-line
-}
-
-function slick_prompt_precmd {
-    slick_prompt_data=""
-
-    if [[ -n "$slick_prompt_fd" ]]; then
-        zle -F $slick_prompt_fd
-        exec {slick_prompt_fd}<&-
-        unset slick_prompt_fd
-    fi
-
-    if [[ -n "$slick_prompt_timestamp" ]]; then
-        slick_prompt_elapsed=$(( EPOCHSECONDS - slick_prompt_timestamp ))
-        [[ $slick_prompt_elapsed -lt 0 ]] && slick_prompt_elapsed=0
-    else
-        unset slick_prompt_elapsed
-    fi
-
-    exec {slick_prompt_fd}< <($SLICK_PATH precmd)
-    zle -F $slick_prompt_fd slick_prompt_refresh
-}
-
-function slick_prompt_preexec {
-    if [[ -n "$slick_prompt_fd" ]]; then
-        zle -F $slick_prompt_fd
-        exec {slick_prompt_fd}<&-
-        unset slick_prompt_fd
-    fi
-
-    slick_prompt_timestamp=$EPOCHSECONDS
-    echo -ne "\e[4 q"
-}
-
-add-zsh-hook precmd slick_prompt_precmd
-add-zsh-hook preexec slick_prompt_preexec
-zle -N zle-keymap-select
-zle -N zle-line-init
-zle -N accept-line slick_prompt_accept_line
+source /path/to/slick/slick.zsh
 ```
+
+`slick.zsh` is the canonical shell integration entrypoint. It:
+- returns quietly in non-interactive shells
+- honors `SLICK_PATH` if it is already set and executable
+- otherwise resolves `slick` from `PATH` or `$HOME/.cargo/bin/slick`
+- silently does nothing if the binary is not available
+
+### Zinit
+
+```sh
+zinit light nbari/slick
+```
+
+Plugin managers can use [`slick.plugin.zsh`](slick.plugin.zsh), which simply delegates to [`slick.zsh`](slick.zsh).
+
+### Dotfiles Example
+
+If you already carry local `slick` customizations in your own `~/.zshrc` or `my-zsh.zsh`, keep the exports and replace the vendored loader block with one of these:
+
+```sh
+export SLICK_PROMPT_GIT_REMOTE_BEHIND=
+export SLICK_PROMPT_GIT_REMOTE_AHEAD=
+export SLICK_PROMPT_GIT_AUTH_SYMBOL=
+source /path/to/slick/slick.zsh
+```
+
+```sh
+export SLICK_PROMPT_GIT_REMOTE_BEHIND=
+export SLICK_PROMPT_GIT_REMOTE_AHEAD=
+export SLICK_PROMPT_GIT_AUTH_SYMBOL=
+zinit light nbari/slick
+```
+
+If you already have your own `accept-line`, `zle-line-init`, or `zle-keymap-select` widgets, load them before `slick.zsh`. The loader preserves and chains existing widgets instead of replacing them.
 
 ## 🔤 Font Setup
 

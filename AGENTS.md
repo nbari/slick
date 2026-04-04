@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`slick` is a single-crate Rust CLI for an async Zsh prompt. Core code lives in `src/`: `src/bin/slick.rs` exposes the `precmd` and `prompt` subcommands, `src/precmd.rs` collects git state, `src/prompt.rs` renders the prompt, and `src/git.rs` holds git-specific helpers. Integration and regression tests live in `tests/*.rs`, while parser/helper unit tests sit next to the code under `#[cfg(test)]`. Benchmarks are in `benches/`, shell integration helpers in `load.zsh` and `test.sh`, and macOS assets/docs in `macOs/`.
+`slick` is a single-crate Rust CLI for an async Zsh prompt. Core code lives in `src/`: `src/bin/slick.rs` exposes the `precmd` and `prompt` subcommands, `src/precmd.rs` collects git state, `src/prompt.rs` renders the prompt, and `src/git.rs` holds git-specific helpers. Integration and regression tests live in `tests/*.rs`, while parser/helper unit tests sit next to the code under `#[cfg(test)]`. Benchmarks are in `benches/`, shell integration helpers in `slick.zsh`, `slick.plugin.zsh`, `load.zsh`, and `test.sh`, and macOS assets/docs in `macOs/`.
 
 ## Build, Test, and Development Commands
 - `cargo build --release`: build the optimized `slick` binary.
@@ -9,7 +9,8 @@
 - `cargo clippy --all-targets --all-features`: run the strict lint gate used by the project.
 - `cargo fmt --all` or `cargo fmt --all --check`: format or verify formatting.
 - `just test`: full local gate; runs clippy, release build, `cargo test`, and `./test.sh`.
-- `source load.zsh`: load the locally built prompt into your current shell for manual testing.
+- `source slick.zsh`: load the reusable prompt integration from this checkout.
+- `source load.zsh`: load the locally built prompt into your current shell for repo-local manual testing.
 
 ## Coding Style & Naming Conventions
 Use Rust 2024 with default `rustfmt` formatting (4-space indentation). Follow existing `snake_case` naming for functions, variables, and test names. Prefer small helpers over deeply nested prompt logic. Clippy is intentionally strict: warnings are denied, and production code should avoid `unwrap`, `expect`, `panic`, and unchecked indexing. Keep environment-variable names in the existing `SLICK_PROMPT_*` style, and preserve compatibility behavior explicitly when changing prompt parsing or rendering.

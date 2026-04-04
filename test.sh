@@ -297,12 +297,20 @@ else
     fail "Failed to generate prompt"
 fi
 
-# TEST 19: load.zsh Regression Guard
-test_case "load.zsh Regression Guard"
-if zsh "$SCRIPT_DIR/tests/load_zsh_regression_test.zsh" >/dev/null 2>&1; then
-    pass "load.zsh preexec/transient hooks preserved"
+# TEST 19: slick.zsh Regression Guard
+test_case "slick.zsh Regression Guard"
+if zsh -dfi -c "cd '$SCRIPT_DIR'; source tests/slick_zsh_regression_test.zsh" >/dev/null 2>&1; then
+    pass "slick.zsh preexec/transient hooks preserved"
 else
-    fail "load.zsh regression test failed"
+    fail "slick.zsh regression test failed"
+fi
+
+# TEST 20: Wrapper Loader Guards
+test_case "Wrapper Loader Guards"
+if zsh -dfi -c "cd '$SCRIPT_DIR'; source tests/load_zsh_regression_test.zsh" >/dev/null 2>&1; then
+    pass "load.zsh and slick.plugin.zsh wrappers preserved"
+else
+    fail "wrapper loader regression test failed"
 fi
 
 # SUMMARY

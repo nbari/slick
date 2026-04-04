@@ -4,12 +4,16 @@
 - Added AWS prompt context detection from `AWS_PROFILE`, `AWS_REGION`, `AWS_DEFAULT_REGION`, and credential env vars with neutral text-only markers like `(aws prod)` and `(aws eu-central-1)`.
 - Added Kubernetes prompt context detection from `KUBECONFIG`, rendering the basename of the first kubeconfig path as a text-only marker like `(k8s dev-cluster)`.
 - Expanded `scripts/preview_prompt.zsh` and `just preview` to simulate AWS and Kubernetes contexts alongside Toolbx, DevPod, and Python environments.
+- Added `slick.zsh` as the canonical reusable shell loader plus `slick.plugin.zsh` for plugin managers such as zinit.
 
 ### Changed
 - Refactored prompt context detection and parsing into `src/context.rs`, reducing the amount of context-specific logic living in `src/prompt.rs`.
 - Kept AWS and Kubernetes markers text-only in v1 to avoid extra font dependencies and symbol configuration surface.
 - Added regression coverage for AWS and Kubernetes marker rendering, ordering, and transient prompt output.
 - Changed the default git branch symbol to ``; set `SLICK_PROMPT_GIT_BRANCH_SYMBOL=""` to disable it.
+- Reduced `load.zsh` to a repo-local dev wrapper that prefers `./target/release/slick` and delegates to `slick.zsh`.
+- Added shell regression coverage for `slick.zsh` and wrapper coverage for `load.zsh` and `slick.plugin.zsh`.
+- Preserved and chained existing `accept-line`, `zle-line-init`, and `zle-keymap-select` widgets in `slick.zsh` so dotfiles can source it without clobbering prior widget wrappers.
 
 ## 0.18.0 (2026-04-04)
 
