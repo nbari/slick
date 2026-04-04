@@ -1,3 +1,19 @@
+## 0.18.0 (2026-04-04)
+
+### Added
+- Optional `SLICK_PROMPT_GIT_BRANCH_SYMBOL` support for prefixing rendered branch names.
+- Added `scripts/preview_prompt.zsh` plus `just preview` helpers for simulating Toolbx, DevPod, and Python prompt contexts with current prompt settings.
+- Added a default-on transient scrollback prompt with RFC 3339 timestamps; disable it with `SLICK_PROMPT_TRANSIENT=0`.
+
+### Changed
+- Changed the default Toolbx marker symbol to `▣` and the default DevPod marker symbol to ``.
+- Updated the prompt documentation and examples to use the new default container symbols.
+- Documented that the git branch symbol inherits the branch text color.
+
+### Fixed
+- Restored the Linux musl GitHub Actions build by provisioning a musl-target zlib prefix for the release build workflow.
+- Added a `load.zsh` shell regression guard to keep the preexec cleanup and transient accept-line flow from regressing, including the macOS output-clearing path.
+
 ## 0.17.0 (2026-04-04)
 
 ### Added
@@ -7,6 +23,7 @@
 
 ### Changed
 - Added explicit `pyenv` prompt detection via `PYENV_VERSION`.
+- Added optional `SLICK_PROMPT_GIT_BRANCH_SYMBOL` support for prefixing rendered branch names.
 - Promoted `SLICK_PROMPT_PYTHON_ENV_COLOR` as the preferred Python environment color setting while keeping `PIPENV_ACTIVE_COLOR` as a legacy fallback.
 - Fixed Python environment prompt parsing so Pipenv names keep internal hyphens while still dropping trailing hash suffixes.
 - Updated `pyenv` prompt parsing to ignore `system` and use the first real entry when multiple versions are present.

@@ -17,6 +17,7 @@ struct EnvDefaults {
     git_auth_color: String,
     git_auth_symbol: String,
     git_branch_color: String,
+    git_branch_symbol: String,
     git_fetch: String,
     git_master_branch_color: String,
     git_remote_color: String,
@@ -34,6 +35,7 @@ struct EnvDefaults {
     symbol: String,
     symbol_color: String,
     time_elapsed_color: String,
+    transient: String,
     toolbox_color: String,
     toolbox_symbol: String,
     vicmd_color: String,
@@ -46,7 +48,7 @@ impl EnvDefaults {
             cmd_max_exec_time: env::var("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
                 .unwrap_or_else(|_| "5".into()),
             devpod_color: env::var("SLICK_PROMPT_DEVPOD_COLOR").unwrap_or_else(|_| "7".into()),
-            devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_default(),
+            devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_else(|_| "".into()),
             error_color: env::var("SLICK_PROMPT_ERROR_COLOR").unwrap_or_else(|_| "196".into()),
             git_action_color: env::var("SLICK_PROMPT_GIT_ACTION_COLOR")
                 .unwrap_or_else(|_| "3".into()),
@@ -56,6 +58,7 @@ impl EnvDefaults {
                 .unwrap_or_else(|_| "🔒".into()),
             git_branch_color: env::var("SLICK_PROMPT_GIT_BRANCH_COLOR")
                 .unwrap_or_else(|_| "3".into()),
+            git_branch_symbol: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL").unwrap_or_default(),
             git_fetch: env::var("SLICK_PROMPT_GIT_FETCH").unwrap_or_else(|_| "1".into()),
             git_master_branch_color: env::var("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR")
                 .unwrap_or_else(|_| "160".into()),
@@ -83,8 +86,9 @@ impl EnvDefaults {
             symbol_color: env::var("SLICK_PROMPT_SYMBOL_COLOR").unwrap_or_else(|_| "5".into()),
             time_elapsed_color: env::var("SLICK_PROMPT_TIME_ELAPSED_COLOR")
                 .unwrap_or_else(|_| "3".into()),
+            transient: env::var("SLICK_PROMPT_TRANSIENT").unwrap_or_else(|_| "1".into()),
             toolbox_color: env::var("SLICK_PROMPT_TOOLBOX_COLOR").unwrap_or_else(|_| "3".into()),
-            toolbox_symbol: env::var("SLICK_PROMPT_TOOLBOX_SYMBOL").unwrap_or_else(|_| "🧰".into()),
+            toolbox_symbol: env::var("SLICK_PROMPT_TOOLBOX_SYMBOL").unwrap_or_else(|_| "▣".into()),
             vicmd_color: env::var("SLICK_PROMPT_VICMD_COLOR").unwrap_or_else(|_| "3".into()),
             vicmd_symbol: env::var("SLICK_PROMPT_VICMD_SYMBOL").unwrap_or_else(|_| ">".into()),
         }
@@ -104,6 +108,7 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_GIT_AUTH_COLOR" => &cache.git_auth_color,
         "SLICK_PROMPT_GIT_AUTH_SYMBOL" => &cache.git_auth_symbol,
         "SLICK_PROMPT_GIT_BRANCH_COLOR" => &cache.git_branch_color,
+        "SLICK_PROMPT_GIT_BRANCH_SYMBOL" => &cache.git_branch_symbol,
         "SLICK_PROMPT_GIT_FETCH" => &cache.git_fetch,
         "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => &cache.git_master_branch_color,
         "SLICK_PROMPT_GIT_REMOTE_COLOR" => &cache.git_remote_color,
@@ -121,6 +126,7 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_SYMBOL" => &cache.symbol,
         "SLICK_PROMPT_SYMBOL_COLOR" => &cache.symbol_color,
         "SLICK_PROMPT_TIME_ELAPSED_COLOR" => &cache.time_elapsed_color,
+        "SLICK_PROMPT_TRANSIENT" => &cache.transient,
         "SLICK_PROMPT_TOOLBOX_COLOR" => &cache.toolbox_color,
         "SLICK_PROMPT_TOOLBOX_SYMBOL" => &cache.toolbox_symbol,
         "SLICK_PROMPT_VICMD_COLOR" => &cache.vicmd_color,

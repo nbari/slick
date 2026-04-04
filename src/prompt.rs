@@ -23,6 +23,8 @@ struct Prompt {
     auth_failed: bool,
 }
 
+const TRANSIENT_TIMESTAMP_COLOR: &str = "8";
+
 // check if current user is root or not
 fn is_root() -> bool {
     get_user_by_uid(get_current_uid()).is_some_and(|user| user.uid() == 0)
@@ -90,6 +92,14 @@ fn format_context_marker(symbol: &str, name: &str) -> String {
         format!("({name})")
     } else {
         format!("({symbol} {name})")
+    }
+}
+
+fn format_branch_marker(symbol: &str, branch: &str) -> String {
+    if symbol.is_empty() {
+        branch.to_string()
+    } else {
+        format!("{symbol} {branch}")
     }
 }
 
@@ -172,6 +182,106 @@ fn get_python_env_color(source: PythonEnvSource) -> String {
     }
 }
 
+fn append_identity_prefix(prompt: &mut String, is_root_user: bool, is_remote_user: bool) {
+    if is_remote_user {
+        if is_root_user {
+            let _ = write!(
+                prompt,
+                "%F{{{}}}%n%F{{{}}}@%m ",
+                get_env("SLICK_PROMPT_ROOT_COLOR"),
+                get_env("SLICK_PROMPT_SSH_COLOR")
+            );
+        } else {
+            let _ = write!(prompt, "%F{{{}}}%n@%m ", get_env("SLICK_PROMPT_SSH_COLOR"));
+        }
+    } else if is_root_user {
+        let _ = write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR"));
+    }
+}
+
+fn append_context_markers(prompt: &mut String) {
+    if let Some(toolbox_name) = get_toolbox_name() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_TOOLBOX_COLOR"),
+            format_context_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
+        );
+    }
+
+    if let Some(devpod_name) = get_devpod_name() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_DEVPOD_COLOR"),
+            format_context_marker(get_env("SLICK_PROMPT_DEVPOD_SYMBOL"), &devpod_name)
+        );
+    }
+
+    if let Some((python_env, source)) = get_python_env() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}({}) ",
+            get_python_env_color(source),
+            python_env
+        );
+    }
+}
+
+fn append_branch(prompt: &mut String, branch: &str) {
+    if branch.is_empty() {
+        return;
+    }
+
+    let branch_marker = format_branch_marker(get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL"), branch);
+    let branch_color = if branch == "master" || branch == "main" {
+        get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR")
+    } else {
+        get_env("SLICK_PROMPT_GIT_BRANCH_COLOR")
+    };
+
+    let _ = write!(prompt, "%F{{{branch_color}}}{branch_marker}");
+}
+
+fn build_transient_prompt(
+    deserialized: &Prompt,
+    is_root_user: bool,
+    is_remote_user: bool,
+    symbol: &str,
+    prompt_symbol_color: &str,
+    transient_timestamp: &str,
+) -> String {
+    let mut prompt = String::with_capacity(256);
+
+    append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
+
+    if !transient_timestamp.is_empty() {
+        let _ = write!(
+            prompt,
+            "%F{{{TRANSIENT_TIMESTAMP_COLOR}}}{transient_timestamp} "
+        );
+    }
+
+    append_context_markers(&mut prompt);
+
+    let _ = write!(prompt, "%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR"));
+
+    if !deserialized.branch.is_empty() {
+        prompt.push(' ');
+        append_branch(&mut prompt, &deserialized.branch);
+    }
+
+    let _ = write!(
+        prompt,
+        " %F{{{}}}{}%f{}",
+        prompt_symbol_color,
+        symbol,
+        get_env("SLICK_PROMPT_NON_BREAKING_SPACE"),
+    );
+
+    prompt
+}
+
 #[allow(clippy::too_many_lines)]
 pub fn display(matches: &ArgMatches) {
     let keymap = matches
@@ -185,6 +295,49 @@ pub fn display(matches: &ArgMatches) {
         .map_or_else(String::new, String::clone);
     let deserialized: Prompt =
         serde_json::from_str(&serialized).unwrap_or_else(|_| Prompt::default());
+
+    let transient = matches.get_flag("transient");
+    let transient_timestamp = matches
+        .get_one::<String>("transient_timestamp")
+        .map_or("", String::as_str);
+
+    // Cache frequently used values
+    let is_root_user = is_root();
+    let is_remote_user = is_remote();
+    let vicmd_symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
+
+    // define symbol
+    let symbol = if keymap == "vicmd" {
+        vicmd_symbol
+    } else if is_root_user {
+        get_env("SLICK_PROMPT_ROOT_SYMBOL")
+    } else {
+        get_env("SLICK_PROMPT_SYMBOL")
+    };
+
+    // symbol color
+    let prompt_symbol_color = if symbol == vicmd_symbol {
+        get_env("SLICK_PROMPT_VICMD_COLOR")
+    } else if last_return_code == "0" {
+        get_env("SLICK_PROMPT_SYMBOL_COLOR")
+    } else {
+        get_env("SLICK_PROMPT_ERROR_COLOR")
+    };
+
+    if transient {
+        print!(
+            "{}",
+            build_transient_prompt(
+                &deserialized,
+                is_root_user,
+                is_remote_user,
+                symbol,
+                prompt_symbol_color,
+                transient_timestamp,
+            )
+        );
+        return;
+    }
 
     // get time elapsed
     // Prefer -e (elapsed) if provided (pre-calculated in zsh to avoid flickering)
@@ -220,77 +373,12 @@ pub fn display(matches: &ArgMatches) {
         },
     );
 
-    // Cache frequently used values
-    let is_root_user = is_root();
-    let is_remote_user = is_remote();
-    let vicmd_symbol = get_env("SLICK_PROMPT_VICMD_SYMBOL");
-
-    // define symbol
-    let symbol = if keymap == "vicmd" {
-        vicmd_symbol
-    } else if is_root_user {
-        get_env("SLICK_PROMPT_ROOT_SYMBOL")
-    } else {
-        get_env("SLICK_PROMPT_SYMBOL")
-    };
-
-    // symbol color
-    let prompt_symbol_color = if symbol == vicmd_symbol {
-        get_env("SLICK_PROMPT_VICMD_COLOR")
-    } else if last_return_code == "0" {
-        get_env("SLICK_PROMPT_SYMBOL_COLOR")
-    } else {
-        get_env("SLICK_PROMPT_ERROR_COLOR")
-    };
-
     // Use String builder instead of Vec for better performance
     // Estimate capacity: ~200 chars is typical for a prompt
     let mut prompt = String::with_capacity(256);
 
-    if is_remote_user {
-        if is_root_user {
-            // prefix with "root" if UID = 0
-            // Writing to String never fails - ignore result
-            let _ = write!(
-                prompt,
-                "%F{{{}}}%n%F{{{}}}@%m ",
-                get_env("SLICK_PROMPT_ROOT_COLOR"),
-                get_env("SLICK_PROMPT_SSH_COLOR")
-            );
-        } else {
-            let _ = write!(prompt, "%F{{{}}}%n@%m ", get_env("SLICK_PROMPT_SSH_COLOR"));
-        }
-    } else if is_root_user {
-        // prefix with "root" if UID = 0
-        let _ = write!(prompt, "%F{{{}}}%n ", get_env("SLICK_PROMPT_ROOT_COLOR"));
-    }
-
-    if let Some(toolbox_name) = get_toolbox_name() {
-        let _ = write!(
-            prompt,
-            "%F{{{}}}{} ",
-            get_env("SLICK_PROMPT_TOOLBOX_COLOR"),
-            format_context_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
-        );
-    }
-
-    if let Some(devpod_name) = get_devpod_name() {
-        let _ = write!(
-            prompt,
-            "%F{{{}}}{} ",
-            get_env("SLICK_PROMPT_DEVPOD_COLOR"),
-            format_context_marker(get_env("SLICK_PROMPT_DEVPOD_SYMBOL"), &devpod_name)
-        );
-    }
-
-    if let Some((python_env, source)) = get_python_env() {
-        let _ = write!(
-            prompt,
-            "%F{{{}}}({}) ",
-            get_python_env_color(source),
-            python_env
-        );
-    }
+    append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
+    append_context_markers(&mut prompt);
 
     // git u_name (before path for consistency with zpty single-render mode)
     if get_env_var("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
@@ -308,21 +396,7 @@ pub fn display(matches: &ArgMatches) {
 
     // branch
     if !deserialized.branch.is_empty() {
-        if deserialized.branch == "master" || deserialized.branch == "main" {
-            let _ = write!(
-                prompt,
-                "%F{{{}}}{}",
-                get_env("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"),
-                deserialized.branch
-            );
-        } else {
-            let _ = write!(
-                prompt,
-                "%F{{{}}}{}",
-                get_env("SLICK_PROMPT_GIT_BRANCH_COLOR"),
-                deserialized.branch
-            );
-        }
+        append_branch(&mut prompt, &deserialized.branch);
         prompt.push(' ');
     }
 
@@ -416,8 +490,9 @@ mod tests {
     #![allow(clippy::expect_used)]
 
     use super::{
-        format_context_marker, get_devpod_name_from_env_vars, get_toolbox_name_from_paths,
-        parse_pyenv_name, parse_toolbox_name, parse_virtual_env_name, strip_pipenv_hash_suffix,
+        format_branch_marker, format_context_marker, get_devpod_name_from_env_vars,
+        get_toolbox_name_from_paths, parse_pyenv_name, parse_toolbox_name, parse_virtual_env_name,
+        strip_pipenv_hash_suffix,
     };
     use std::fs;
     use tempfile::tempdir;
@@ -465,12 +540,22 @@ mod tests {
 
     #[test]
     fn test_format_context_marker_with_symbol() {
-        assert_eq!(format_context_marker("🧰", "codex"), "(🧰 codex)");
+        assert_eq!(format_context_marker("▣", "codex"), "(▣ codex)");
     }
 
     #[test]
     fn test_format_context_marker_without_symbol() {
         assert_eq!(format_context_marker("", "codex"), "(codex)");
+    }
+
+    #[test]
+    fn test_format_branch_marker_with_symbol() {
+        assert_eq!(format_branch_marker("", "main"), " main");
+    }
+
+    #[test]
+    fn test_format_branch_marker_without_symbol() {
+        assert_eq!(format_branch_marker("", "main"), "main");
     }
 
     #[test]

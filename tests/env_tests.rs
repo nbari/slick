@@ -14,6 +14,7 @@ const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_GIT_AUTH_COLOR",
     "SLICK_PROMPT_GIT_AUTH_SYMBOL",
     "SLICK_PROMPT_GIT_BRANCH_COLOR",
+    "SLICK_PROMPT_GIT_BRANCH_SYMBOL",
     "SLICK_PROMPT_GIT_FETCH",
     "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR",
     "SLICK_PROMPT_GIT_REMOTE_COLOR",
@@ -32,12 +33,13 @@ const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_SYMBOL_COLOR",
     "SLICK_PROMPT_TIME_ELAPSED_COLOR",
     "SLICK_PROMPT_TOOLBOX_COLOR",
+    "SLICK_PROMPT_TRANSIENT",
     "SLICK_PROMPT_TOOLBOX_SYMBOL",
     "SLICK_PROMPT_VICMD_COLOR",
     "SLICK_PROMPT_VICMD_SYMBOL",
 ];
 
-const OPTIONAL_EMPTY_ENV_VARS: &[&str] = &["SLICK_PROMPT_DEVPOD_SYMBOL"];
+const OPTIONAL_EMPTY_ENV_VARS: &[&str] = &["SLICK_PROMPT_GIT_BRANCH_SYMBOL"];
 
 #[test]
 fn test_get_env_returns_non_empty_defaults() {
@@ -87,6 +89,12 @@ fn test_get_env_git_fetch_is_boolean() {
 }
 
 #[test]
+fn test_get_env_transient_is_boolean() {
+    let val = get_env("SLICK_PROMPT_TRANSIENT");
+    assert!(val == "0" || val == "1", "TRANSIENT should be 0 or 1");
+}
+
+#[test]
 fn test_get_env_max_exec_time_is_numeric() {
     let val = get_env("SLICK_PROMPT_CMD_MAX_EXEC_TIME");
     assert!(
@@ -102,10 +110,13 @@ fn test_get_env_special_chars() {
     assert_eq!(nbsp.chars().count(), 1);
 
     let toolbox_symbol = get_env("SLICK_PROMPT_TOOLBOX_SYMBOL");
-    assert!(!toolbox_symbol.is_empty());
+    assert_eq!(toolbox_symbol, "▣");
 
     let devpod_symbol = get_env("SLICK_PROMPT_DEVPOD_SYMBOL");
-    assert_eq!(devpod_symbol, "");
+    assert_eq!(devpod_symbol, "");
+
+    let git_branch_symbol = get_env("SLICK_PROMPT_GIT_BRANCH_SYMBOL");
+    assert_eq!(git_branch_symbol, "");
 }
 
 #[test]

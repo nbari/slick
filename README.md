@@ -36,51 +36,69 @@ The `load.zsh` script automatically detects the slick binary and sets up the pro
 
 ### Production Setup
 
-Add this to your `.zshrc`:
+Add this to your `.zshrc` or adapt [`load.zsh`](load.zsh):
 
 ```sh
-# Load required modules
 zmodload zsh/datetime
 autoload -Uz add-zsh-hook
 
-# Register hooks
-add-zsh-hook precmd slick_prompt_precmd
-add-zsh-hook preexec slick_prompt_preexec
-
-# Register zle widgets
-zle -N zle-keymap-select
-zle -N zle-line-init
-
-# Global variables
 typeset -g slick_prompt_data
+typeset -g slick_prompt_fd
 typeset -g slick_prompt_timestamp
 typeset -g slick_prompt_elapsed
 
 SLICK_PATH=$HOME/.cargo/bin/slick
 
+function slick_prompt_transient_enabled {
+    [[ "${SLICK_PROMPT_TRANSIENT:-1}" != "0" ]]
+}
+
+function slick_prompt_rfc3339_timestamp {
+    local timestamp
+
+    strftime -s timestamp '%Y-%m-%dT%H:%M:%S%z' $EPOCHSECONDS
+    print -r -- "${timestamp[1,-3]}:${timestamp[-2,-1]}"
+}
+
+function slick_prompt_render {
+    local exit_status=${1:-0}
+    local transient=${2:-0}
+    local transient_timestamp=${3:-}
+    local -a args
+
+    args=(
+        "$SLICK_PATH"
+        prompt
+        -k "${KEYMAP:-main}"
+        -r "$exit_status"
+        -d "${slick_prompt_data:-}"
+    )
+
+    if [[ -n "${slick_prompt_elapsed:-}" ]]; then
+        args+=(-e "$slick_prompt_elapsed")
+    fi
+
+    if [[ "$transient" == 1 ]]; then
+        args+=(--transient)
+        if [[ -n "$transient_timestamp" ]]; then
+            args+=(--transient-timestamp "$transient_timestamp")
+        fi
+    fi
+
+    "${args[@]}"
+}
+
 function slick_prompt_refresh {
     local exit_status=$?
     local line
 
-    # Read ONE line per callback (non-blocking!)
-    # ZSH will call this function again if there's more data
     if read -r -u $1 line; then
         slick_prompt_data="$line"
-
-        # Always pass elapsed time if available (needed for ALL phases to show consistent elapsed time!)
-        # Use the pre-calculated elapsed time from precmd to avoid flickering
-        if [[ -n "$slick_prompt_elapsed" ]]; then
-            PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""} -e $slick_prompt_elapsed)
-        else
-            PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -r $exit_status -d ${slick_prompt_data:-""})
-        fi
-
+        PROMPT=$(slick_prompt_render "$exit_status")
         zle && zle reset-prompt
-        return  # RETURN immediately - don't block! Handler will be called again for next line
+        return
     fi
 
-    # No more data - close fd and remove handler
-    # Clean up timestamp and elapsed now that all phases are complete
     unset slick_prompt_timestamp
     unset slick_prompt_elapsed
     zle -F $1
@@ -88,41 +106,59 @@ function slick_prompt_refresh {
 }
 
 function zle-line-init zle-keymap-select {
-    PROMPT=$($SLICK_PATH prompt -k "$KEYMAP" -d ${slick_prompt_data:-""})
+    PROMPT=$(slick_prompt_render 0)
     zle && zle reset-prompt
 }
 
-function slick_prompt_precmd() {
+function slick_prompt_accept_line {
+    local exit_status=$?
+    local transient_timestamp
+
+    if slick_prompt_transient_enabled; then
+        transient_timestamp=$(slick_prompt_rfc3339_timestamp)
+        PROMPT=$(slick_prompt_render "$exit_status" 1 "$transient_timestamp")
+        zle reset-prompt
+    fi
+
+    zle .accept-line
+}
+
+function slick_prompt_precmd {
     slick_prompt_data=""
 
-    # Calculate elapsed time ONCE here (avoids flickering across multiple render phases)
-    # If timestamp is set (command was run), calculate elapsed seconds
-    # Otherwise, leave it unset (no command was run, e.g., just pressed enter)
+    if [[ -n "$slick_prompt_fd" ]]; then
+        zle -F $slick_prompt_fd
+        exec {slick_prompt_fd}<&-
+        unset slick_prompt_fd
+    fi
+
     if [[ -n "$slick_prompt_timestamp" ]]; then
-        slick_prompt_elapsed=$(( $EPOCHSECONDS - $slick_prompt_timestamp ))
+        slick_prompt_elapsed=$(( EPOCHSECONDS - slick_prompt_timestamp ))
+        [[ $slick_prompt_elapsed -lt 0 ]] && slick_prompt_elapsed=0
     else
         unset slick_prompt_elapsed
     fi
 
-    local fd
-    exec {fd}< <($SLICK_PATH precmd)
-    zle -F $fd slick_prompt_refresh
+    exec {slick_prompt_fd}< <($SLICK_PATH precmd)
+    zle -F $slick_prompt_fd slick_prompt_refresh
 }
 
-function slick_prompt_preexec() {
+function slick_prompt_preexec {
+    if [[ -n "$slick_prompt_fd" ]]; then
+        zle -F $slick_prompt_fd
+        exec {slick_prompt_fd}<&-
+        unset slick_prompt_fd
+    fi
+
     slick_prompt_timestamp=$EPOCHSECONDS
-
-    # Set cursor style
-    # 0  ⇒  blinking block.
-    # 1  ⇒  blinking block (default).
-    # 2  ⇒  steady block.
-    # 3  ⇒  blinking underline.
-    # 4  ⇒  steady underline.
-    # 5  ⇒  blinking bar, xterm.
-    # 6  ⇒  steady bar, xterm.
-
     echo -ne "\e[4 q"
 }
+
+add-zsh-hook precmd slick_prompt_precmd
+add-zsh-hook preexec slick_prompt_preexec
+zle -N zle-keymap-select
+zle -N zle-line-init
+zle -N accept-line slick_prompt_accept_line
 ```
 
 ## 🔤 Font Setup
@@ -166,8 +202,11 @@ export SLICK_PROMPT_PYTHON_ENV_COLOR=7
 export SLICK_PROMPT_DEVPOD_COLOR=7
 
 # Toolbx marker
-export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
+export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"
 export SLICK_PROMPT_TOOLBOX_COLOR=yellow
+
+# Optional git branch prefix
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'
 ```
 
 ### All Environment Variables
@@ -178,6 +217,7 @@ export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5        # Max command time to display (se
 export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0=no)
 export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=show)
 export SLICK_PROMPT_NON_BREAKING_SPACE=" "     # Non-breaking space character
+export SLICK_PROMPT_TRANSIENT=1                # Compact previous prompt in scrollback (0=disable)
 ```
 
 #### Prompt Symbols
@@ -188,8 +228,9 @@ export SLICK_PROMPT_ROOT_SYMBOL="#"            # Root user symbol
 export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"       # Git ahead symbol
 export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
-export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"        # Toolbx marker symbol
-export SLICK_PROMPT_DEVPOD_SYMBOL=""           # DevPod marker symbol
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""       # Optional prefix before branch name, e.g. $'\ue0a0'
+export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"         # Toolbx marker symbol
+export SLICK_PROMPT_DEVPOD_SYMBOL=""          # DevPod marker symbol
 ```
 
 #### Colors
@@ -218,6 +259,8 @@ export SLICK_PROMPT_GIT_REMOTE_COLOR=6         # Remote status color
 export SLICK_PROMPT_GIT_UNAME_COLOR=8          # Git username color
 export SLICK_PROMPT_GIT_AUTH_COLOR=red         # Git auth failed color
 ```
+
+If `SLICK_PROMPT_GIT_BRANCH_SYMBOL` is set, it is printed immediately before the branch name, for example ` main`. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`. It uses the same color as the branch text: `SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR` for `main`/`master`, and `SLICK_PROMPT_GIT_BRANCH_COLOR` for other branches.
 
 `PIPENV_ACTIVE_COLOR` is still honored as a legacy fallback, but `SLICK_PROMPT_PYTHON_ENV_COLOR` is the preferred setting for Python environments.
 
@@ -258,19 +301,51 @@ These symbols work with any Nerd Font (Monoid, JetBrainsMono, FiraCode, Hack, et
 
 See more examples in [envrc](envrc).
 
-## 🧰 Toolbx Detection
+## Prompt Preview
+
+Use the preview helper to render the prompt with simulated Toolbx, DevPod, and Python contexts while keeping your current `SLICK_PROMPT_*` settings:
+
+```bash
+just preview
+just preview-watch
+```
+
+Optional overrides let you tune the sample names and branch data:
+
+```bash
+SLICK_PREVIEW_BRANCH=main \
+SLICK_PREVIEW_STATUS="M 2" \
+SLICK_PREVIEW_TOOLBOX_NAME=toolbox \
+SLICK_PREVIEW_DEVPOD_NAME=workspace \
+SLICK_PREVIEW_PYTHON_ENV=.venv \
+just preview
+```
+
+The helper lives at `scripts/preview_prompt.zsh` and uses `print -P` so the prompt colors render as they would in `zsh`.
+
+## Transient Prompt
+
+By default, slick rewrites the prompt you just used into a compact single-line form when you press Enter. The live prompt stays rich while you type; only the scrollback version is compacted. The transient form includes an RFC 3339 timestamp plus the key context markers, path, branch, and prompt symbol while omitting noisier git status details.
+
+Disable it if you prefer the old behavior:
+
+```bash
+export SLICK_PROMPT_TRANSIENT=0
+```
+
+## Toolbx Detection
 
 Slick detects when it is running inside Fedora Toolbx and shows the toolbox name before the path.
 
 **Example:**
 ```bash
-(🧰 codex) ~/projects/slick main
+(▣ codex) ~/projects/slick main
 ❯
 ```
 
 Configure the Toolbx marker:
 ```bash
-export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"   # Default
+export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"   # Default
 export SLICK_PROMPT_TOOLBOX_COLOR=3       # Default
 ```
 
@@ -280,13 +355,13 @@ Slick detects when `DEVPOD` is set and shows `DEVPOD_WORKSPACE_ID` before the pa
 
 **Example:**
 ```bash
-(hfile) ~/projects/slick main
+( hfile) ~/projects/slick main
 ❯
 ```
 
 Configure the DevPod marker:
 ```bash
-export SLICK_PROMPT_DEVPOD_SYMBOL=""      # Default
+export SLICK_PROMPT_DEVPOD_SYMBOL=""      # Default
 export SLICK_PROMPT_DEVPOD_COLOR=7        # Default
 ```
 

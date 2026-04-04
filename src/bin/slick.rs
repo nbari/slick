@@ -1,4 +1,4 @@
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 use slick::{precmd, prompt};
 
 #[tokio::main]
@@ -21,12 +21,13 @@ The default values are:
 
     SLICK_PROMPT_CMD_MAX_EXEC_TIME=5
     SLICK_PROMPT_DEVPOD_COLOR=7
-    SLICK_PROMPT_DEVPOD_SYMBOL=""
+    SLICK_PROMPT_DEVPOD_SYMBOL=
     SLICK_PROMPT_ERROR_COLOR=196
     SLICK_PROMPT_GIT_ACTION_COLOR=3
     SLICK_PROMPT_GIT_AUTH_COLOR=red
     SLICK_PROMPT_GIT_AUTH_SYMBOL=🔒
     SLICK_PROMPT_GIT_BRANCH_COLOR=3
+    SLICK_PROMPT_GIT_BRANCH_SYMBOL=""
     SLICK_PROMPT_GIT_FETCH=1 (if set to 0 disables git fetch)
     SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160
     SLICK_PROMPT_GIT_REMOTE_COLOR=6
@@ -44,12 +45,23 @@ The default values are:
     SLICK_PROMPT_SYMBOL="$"
     SLICK_PROMPT_SYMBOL_COLOR=5
     SLICK_PROMPT_TIME_ELAPSED_COLOR=3
+    SLICK_PROMPT_TRANSIENT=1
     SLICK_PROMPT_TOOLBOX_COLOR=3
-    SLICK_PROMPT_TOOLBOX_SYMBOL=🧰
+    SLICK_PROMPT_TOOLBOX_SYMBOL=▣
     SLICK_PROMPT_VICMD_COLOR=3
     SLICK_PROMPT_VICMD_SYMBOL=">"
     PIPENV_ACTIVE_COLOR=7 (legacy fallback)
 "#,
+                )
+                .arg(
+                    Arg::new("transient")
+                        .long("transient")
+                        .action(ArgAction::SetTrue),
+                )
+                .arg(
+                    Arg::new("transient_timestamp")
+                        .long("transient-timestamp")
+                        .num_args(1),
                 )
                 .arg(Arg::new("last_return_code").short('r').num_args(1))
                 .arg(Arg::new("keymap").short('k').num_args(1))

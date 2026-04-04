@@ -10,6 +10,16 @@ fn get_slick_binary() -> String {
     env!("CARGO_BIN_EXE_slick").to_string()
 }
 
+fn prompt_data(branch: &str, status: &str) -> String {
+    format!(
+        r#"{{"action":"","auth_failed":false,"branch":"{branch}","remote":[],"staged":false,"status":"{status}","u_name":""}}"#,
+    )
+}
+
+fn prompt_data_with_branch(branch: &str) -> String {
+    prompt_data(branch, "")
+}
+
 fn write_toolbox_metadata() -> (tempfile::TempDir, String, String) {
     let tempdir = tempdir().expect("tempdir should be created");
     let toolboxenv_path = tempdir.path().join(".toolboxenv");
@@ -44,7 +54,7 @@ fn test_toolbox_marker_renders_with_default_symbol_before_path() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let marker_index = stdout
-        .find("(🧰 codex)")
+        .find("(▣ codex)")
         .expect("toolbox marker should be present");
     let path_index = stdout.find("%~").expect("path marker should be present");
 
@@ -107,7 +117,7 @@ fn test_toolbox_marker_precedes_virtual_env_marker() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let toolbox_index = stdout
-        .find("(🧰 codex)")
+        .find("(▣ codex)")
         .expect("toolbox marker should be present");
     let venv_index = stdout
         .find("(project)")
@@ -129,7 +139,7 @@ fn test_devpod_marker_renders_before_path() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let marker_index = stdout
-        .find("(hfile)")
+        .find("( hfile)")
         .expect("devpod marker should be present");
     let path_index = stdout.find("%~").expect("path marker should be present");
 
@@ -167,7 +177,7 @@ fn test_devpod_marker_precedes_virtual_env_marker() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let devpod_index = stdout
-        .find("(hfile)")
+        .find("( hfile)")
         .expect("devpod marker should be present");
     let venv_index = stdout
         .find("(project)")
@@ -189,6 +199,60 @@ fn test_virtualenv_marker_uses_configured_color() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("%F{42}(project) "));
+}
+
+#[test]
+fn test_git_branch_renders_without_symbol_by_default() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("feature/test"),
+        ])
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{3}feature/test
+"
+    ));
+    assert!(!stdout.contains(" feature/test"));
+}
+
+#[test]
+fn test_git_branch_renders_with_configured_symbol() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("main"),
+        ])
+        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains(
+        "%F{160} main
+"
+    ));
 }
 
 #[test]
@@ -281,4 +345,68 @@ fn test_pyenv_color_does_not_fall_back_to_legacy_pipenv_color() {
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("%F{7}(project) "));
     assert!(!stdout.contains("%F{88}(project) "));
+}
+
+#[test]
+fn test_transient_prompt_renders_single_line_with_timestamp() {
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "--transient",
+            "--transient-timestamp",
+            "2026-04-04T16:12:03+02:00",
+            "-e",
+            "0",
+            "-r",
+            "1",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data("feature/test", "M 10"),
+        ])
+        .env("SLICK_PROMPT_GIT_BRANCH_SYMBOL", "")
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("%F{8}2026-04-04T16:12:03+02:00 "));
+    assert!(stdout.contains("%F{74}%~ %F{3} feature/test %F{196}$"));
+    assert!(!stdout.contains("[M 10]"));
+    assert!(!stdout.contains('\n'));
+}
+
+#[test]
+fn test_transient_prompt_keeps_context_markers_but_stays_compact() {
+    let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
+
+    let output = Command::new(get_slick_binary())
+        .args([
+            "prompt",
+            "--transient",
+            "--transient-timestamp",
+            "2026-04-04T16:12:03+02:00",
+            "-e",
+            "0",
+            "-r",
+            "0",
+            "-k",
+            "main",
+            "-d",
+            &prompt_data_with_branch("develop"),
+        ])
+        .env("VIRTUAL_ENV", "/tmp/venvs/project")
+        .env("SLICK_TEST_TOOLBOXENV_PATH", &toolboxenv_path)
+        .env("SLICK_TEST_CONTAINERENV_PATH", &containerenv_path)
+        .output()
+        .expect("Failed to execute slick");
+
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("%F{3}(▣ codex) "));
+    assert!(stdout.contains("%F{7}(project) "));
+    assert!(!stdout.contains("[staged]"));
+    assert!(!stdout.contains('\n'));
 }

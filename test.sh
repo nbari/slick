@@ -297,6 +297,14 @@ else
     fail "Failed to generate prompt"
 fi
 
+# TEST 19: load.zsh Regression Guard
+test_case "load.zsh Regression Guard"
+if zsh "$SCRIPT_DIR/tests/load_zsh_regression_test.zsh" >/dev/null 2>&1; then
+    pass "load.zsh preexec/transient hooks preserved"
+else
+    fail "load.zsh regression test failed"
+fi
+
 # SUMMARY
 echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}TEST SUMMARY${NC}"

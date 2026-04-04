@@ -25,6 +25,10 @@ export SLICK_PROMPT_GIT_FETCH=1
 # Default: 0 (show username)
 #export SLICK_PROMPT_NO_GIT_UNAME=0
 
+# Compact previous prompt in scrollback (1=enable, 0=disable)
+# Default: 1
+#export SLICK_PROMPT_TRANSIENT=1
+
 # Non-breaking space character
 # Default: \u{a0}
 #export SLICK_PROMPT_NON_BREAKING_SPACE=" "
@@ -58,14 +62,14 @@ export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
 
 # Toolbx marker symbol
-# Default: 🧰
+# Default: ▣
 # Rendered as: (<symbol> <toolbox-name>)
-#export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
+#export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"
 
 # DevPod marker symbol
-# Default: empty
-# Rendered as: (<symbol> <workspace-id>) or (<workspace-id>)
-#export SLICK_PROMPT_DEVPOD_SYMBOL=""
+# Default: 
+# Rendered as: (<symbol> <workspace-id>)
+#export SLICK_PROMPT_DEVPOD_SYMBOL=""
 
 # ==========================================
 # COLORS (256-color palette or named colors)
@@ -122,6 +126,10 @@ export SLICK_PROMPT_TIME_ELAPSED_COLOR=3
 # Git branch name color
 # Default: 3 (yellow)
 export SLICK_PROMPT_GIT_BRANCH_COLOR=3
+
+# Git branch prefix symbol
+# Default: empty
+export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""
 
 # Git master/main branch color
 # Default: 160 (red)
@@ -195,5 +203,5 @@ export SLICK_PROMPT_GIT_AUTH_COLOR=red
 #export SLICK_PROMPT_VICMD_SYMBOL="🔙"
 #export SLICK_PROMPT_ROOT_SYMBOL="👑"
 #export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔐"
-#export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
+#export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"
 #export SLICK_PROMPT_DEVPOD_SYMBOL="🧪"

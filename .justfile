@@ -25,6 +25,14 @@ check: clippy
 fmt:
   cargo fmt
 
+# Preview prompt contexts with current SLICK_PROMPT_* settings
+preview:
+  zsh scripts/preview_prompt.zsh
+
+# Continuously refresh the prompt preview
+preview-watch:
+  zsh scripts/preview_prompt.zsh --watch
+
 # Clean build artifacts
 clean:
   cargo clean

@@ -12,7 +12,7 @@ just test
 
 ## Test Coverage
 
-### Integration Tests (17 tests)
+### Integration Tests (19 tests)
 
 **Basic Functionality:**
 1. Basic git repository detection
@@ -39,17 +39,21 @@ just test
 13. **SSH auth prompt protection** (prevents password/key prompts) 🔒
 14. Git user name detection
 
-### Unit Tests (18 tests)
+### Cargo Test Suite (84 tests)
 
 ```bash
 cargo test
 ```
 
-- 3 unit tests (src/lib.rs)
-- 7 environment tests  
+- 26 prompt/lib tests (`src/lib.rs` and `src/prompt.rs`)
+- 12 auth cache tests  
+- 9 environment tests
 - 8 git integration tests
+- 5 git unit tests
+- 6 elapsed-time prompt tests
+- 18 prompt rendering tests
 
-**Total: 35 tests** (17 integration + 18 unit)
+**Total: 103 checks** (84 cargo tests + 19 integration tests)
 
 ## Auth/Credential Protection
 
@@ -80,6 +84,8 @@ just build       # Build release binary
 just fmt         # Format code
 just clean       # Clean build artifacts
 just integration # Run integration tests only
+just preview     # Render example prompt contexts
+just preview-watch # Refresh the prompt preview continuously
 just version     # Show version
 ```
 
@@ -161,9 +167,9 @@ just check
 
 Runs:
 - ✅ Cargo clippy (strict)
-- ✅ Cargo tests (18 tests)
-- ✅ Format check
-- ✅ Integration tests (17 tests)
+- ✅ Cargo tests (84 tests)
+- ✅ Release build
+- ✅ Integration tests (19 tests)
 
 ## Performance Expectations
 
@@ -182,11 +188,12 @@ Runs:
 just test    # Everything
 ```
 
-**Total coverage:** 35 tests
-- 18 Cargo tests ✅
-- 17 Integration tests ✅
+**Total coverage:** 103 checks
+- 84 Cargo tests ✅
+- 19 Integration tests ✅
   - Including **SSH auth prompt protection** 🔒
   - Including **SSH timeout protection** ⚡
+  - Including **load.zsh preexec/transient regression guard** 🛡️
 - All passing ✅
 
 **Key Features Tested:**
