@@ -1,3 +1,19 @@
+## 0.17.0 (2026-04-04)
+
+### Added
+- DevPod prompt marker support using `DEVPOD` and `DEVPOD_WORKSPACE_ID`.
+- New environment variables: `SLICK_PROMPT_DEVPOD_SYMBOL`, `SLICK_PROMPT_DEVPOD_COLOR`.
+- Regression tests covering DevPod marker rendering, ordering, and environment default handling.
+
+### Changed
+- Added explicit `pyenv` prompt detection via `PYENV_VERSION`.
+- Promoted `SLICK_PROMPT_PYTHON_ENV_COLOR` as the preferred Python environment color setting while keeping `PIPENV_ACTIVE_COLOR` as a legacy fallback.
+- Fixed Python environment prompt parsing so Pipenv names keep internal hyphens while still dropping trailing hash suffixes.
+- Updated `pyenv` prompt parsing to ignore `system` and use the first real entry when multiple versions are present.
+- Scoped the legacy `PIPENV_ACTIVE_COLOR` fallback to Pipenv-derived markers so it no longer affects `pyenv`.
+- Expanded regression coverage for Pipenv and `pyenv` prompt parsing edge cases.
+- Updated the default Toolbx marker color to yellow.
+
 ## 0.16.0 (2026-04-01)
 
 ### Changed

@@ -69,11 +69,106 @@ fn get_toolbox_name() -> Option<String> {
     get_toolbox_name_from_paths(&toolbox_env_path(), &container_env_path())
 }
 
-fn format_toolbox_marker(symbol: &str, toolbox_name: &str) -> String {
-    if symbol.is_empty() {
-        format!("({toolbox_name})")
+fn get_devpod_name_from_env_vars(devpod: &str, workspace_id: &str) -> Option<String> {
+    if devpod.is_empty() {
+        return None;
+    }
+
+    if workspace_id.is_empty() {
+        Some("devpod".to_string())
     } else {
-        format!("({symbol} {toolbox_name})")
+        Some(workspace_id.to_string())
+    }
+}
+
+fn get_devpod_name() -> Option<String> {
+    get_devpod_name_from_env_vars(&get_env_var("DEVPOD"), &get_env_var("DEVPOD_WORKSPACE_ID"))
+}
+
+fn format_context_marker(symbol: &str, name: &str) -> String {
+    if symbol.is_empty() {
+        format!("({name})")
+    } else {
+        format!("({symbol} {name})")
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PythonEnvSource {
+    VirtualEnv { pipenv_active: bool },
+    Pyenv,
+}
+
+fn strip_pipenv_hash_suffix(name: &str) -> &str {
+    let Some((prefix, suffix)) = name.rsplit_once('-') else {
+        return name;
+    };
+
+    if suffix.len() == 8 && suffix.chars().all(|ch| ch.is_ascii_alphanumeric()) {
+        prefix
+    } else {
+        name
+    }
+}
+
+fn parse_virtual_env_name(virtual_env: &str, pipenv_active: bool) -> Option<String> {
+    let name = virtual_env
+        .rsplit('/')
+        .next()
+        .filter(|name| !name.is_empty())?;
+
+    if pipenv_active {
+        Some(strip_pipenv_hash_suffix(name).to_string())
+    } else {
+        Some(name.to_string())
+    }
+}
+
+fn parse_pyenv_name(pyenv_version: &str) -> Option<String> {
+    pyenv_version
+        .split(':')
+        .map(str::trim)
+        .find(|version| !version.is_empty() && *version != "system")
+        .map(|version| version.rsplit('/').next().unwrap_or(version).to_string())
+}
+
+fn get_python_env() -> Option<(String, PythonEnvSource)> {
+    let pipenv_active = !get_env_var("PIPENV_ACTIVE").is_empty();
+
+    let virtual_env_prompt = get_env_var("VIRTUAL_ENV_PROMPT");
+    if !virtual_env_prompt.is_empty() {
+        return Some((
+            virtual_env_prompt,
+            PythonEnvSource::VirtualEnv { pipenv_active },
+        ));
+    }
+
+    let virtual_env = get_env_var("VIRTUAL_ENV");
+    if !virtual_env.is_empty() {
+        return parse_virtual_env_name(&virtual_env, pipenv_active)
+            .map(|name| (name, PythonEnvSource::VirtualEnv { pipenv_active }));
+    }
+
+    parse_pyenv_name(&get_env_var("PYENV_VERSION")).map(|name| (name, PythonEnvSource::Pyenv))
+}
+
+fn get_python_env_color(source: PythonEnvSource) -> String {
+    let python_env_color = get_env_var("SLICK_PROMPT_PYTHON_ENV_COLOR");
+    if !python_env_color.is_empty() {
+        return python_env_color;
+    }
+
+    match source {
+        PythonEnvSource::VirtualEnv {
+            pipenv_active: true,
+        } => get_env_var_or(
+            "PIPENV_ACTIVE_COLOR",
+            get_env("SLICK_PROMPT_PYTHON_ENV_COLOR"),
+        ),
+        PythonEnvSource::VirtualEnv {
+            pipenv_active: false,
+        }
+        | PythonEnvSource::Pyenv => get_env("SLICK_PROMPT_PYTHON_ENV_COLOR").to_string(),
     }
 }
 
@@ -175,39 +270,26 @@ pub fn display(matches: &ArgMatches) {
             prompt,
             "%F{{{}}}{} ",
             get_env("SLICK_PROMPT_TOOLBOX_COLOR"),
-            format_toolbox_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
+            format_context_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
         );
     }
 
-    // PIPENV - optimized with rsplit_once
-    let pipenv_active = get_env_var("PIPENV_ACTIVE");
-    let virtual_env = get_env_var("VIRTUAL_ENV");
-    if !pipenv_active.is_empty() || !virtual_env.is_empty() {
-        // Check if env VIRTUAL_ENV_PROMPT if set else use VIRTUAL_ENV
-        let venv = env::var("VIRTUAL_ENV_PROMPT").unwrap_or_else(|_| {
-            // Use rsplit_once for better performance
-            if let Some((_, last)) = virtual_env.rsplit_once('/') {
-                if pipenv_active.is_empty() {
-                    last.to_string()
-                } else {
-                    // Get first part before '-' for pipenv
-                    last.split_once('-')
-                        .map_or(last, |(first, _)| first)
-                        .to_string()
-                }
-            } else {
-                String::new()
-            }
-        });
+    if let Some(devpod_name) = get_devpod_name() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_DEVPOD_COLOR"),
+            format_context_marker(get_env("SLICK_PROMPT_DEVPOD_SYMBOL"), &devpod_name)
+        );
+    }
 
-        if !venv.is_empty() {
-            let _ = write!(
-                prompt,
-                "%F{{{}}}({}) ",
-                get_env_var_or("PIPENV_ACTIVE_COLOR", "7"),
-                venv
-            );
-        }
+    if let Some((python_env, source)) = get_python_env() {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}({}) ",
+            get_python_env_color(source),
+            python_env
+        );
     }
 
     // git u_name (before path for consistency with zpty single-render mode)
@@ -333,7 +415,10 @@ pub fn display(matches: &ArgMatches) {
 mod tests {
     #![allow(clippy::expect_used)]
 
-    use super::{format_toolbox_marker, get_toolbox_name_from_paths, parse_toolbox_name};
+    use super::{
+        format_context_marker, get_devpod_name_from_env_vars, get_toolbox_name_from_paths,
+        parse_pyenv_name, parse_toolbox_name, parse_virtual_env_name, strip_pipenv_hash_suffix,
+    };
     use std::fs;
     use tempfile::tempdir;
 
@@ -379,12 +464,104 @@ mod tests {
     }
 
     #[test]
-    fn test_format_toolbox_marker_with_symbol() {
-        assert_eq!(format_toolbox_marker("🧰", "codex"), "(🧰 codex)");
+    fn test_format_context_marker_with_symbol() {
+        assert_eq!(format_context_marker("🧰", "codex"), "(🧰 codex)");
     }
 
     #[test]
-    fn test_format_toolbox_marker_without_symbol() {
-        assert_eq!(format_toolbox_marker("", "codex"), "(codex)");
+    fn test_format_context_marker_without_symbol() {
+        assert_eq!(format_context_marker("", "codex"), "(codex)");
+    }
+
+    #[test]
+    fn test_get_devpod_name_returns_workspace_id() {
+        assert_eq!(
+            get_devpod_name_from_env_vars("true", "hfile"),
+            Some("hfile".to_string())
+        );
+    }
+
+    #[test]
+    fn test_get_devpod_name_falls_back_to_devpod() {
+        assert_eq!(
+            get_devpod_name_from_env_vars("true", ""),
+            Some("devpod".to_string())
+        );
+    }
+
+    #[test]
+    fn test_get_devpod_name_returns_none_when_unset() {
+        assert_eq!(get_devpod_name_from_env_vars("", "hfile"), None);
+    }
+
+    #[test]
+    fn test_parse_virtual_env_name_returns_last_path_segment() {
+        assert_eq!(
+            parse_virtual_env_name("/tmp/venvs/project", false),
+            Some("project".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_virtual_env_name_strips_pipenv_hash() {
+        assert_eq!(
+            parse_virtual_env_name("/tmp/venvs/project-a1b2c3d4", true),
+            Some("project".to_string())
+        );
+    }
+
+    #[test]
+    fn test_strip_pipenv_hash_suffix_preserves_internal_hyphens() {
+        assert_eq!(strip_pipenv_hash_suffix("my-app-a1b2c3d4"), "my-app");
+    }
+
+    #[test]
+    fn test_strip_pipenv_hash_suffix_keeps_custom_names() {
+        assert_eq!(strip_pipenv_hash_suffix("custom-env"), "custom-env");
+    }
+
+    #[test]
+    fn test_parse_virtual_env_name_keeps_non_pipenv_hyphenated_name() {
+        assert_eq!(
+            parse_virtual_env_name("/tmp/venvs/custom-env", false),
+            Some("custom-env".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_pyenv_name_handles_virtualenv_style_names() {
+        assert_eq!(
+            parse_pyenv_name("3.12.1/envs/project"),
+            Some("project".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_pyenv_name_handles_multiple_versions() {
+        assert_eq!(
+            parse_pyenv_name("3.12.1:system"),
+            Some("3.12.1".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_pyenv_name_skips_system_when_real_env_exists() {
+        assert_eq!(
+            parse_pyenv_name("system:3.12.1/envs/project"),
+            Some("project".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_pyenv_name_returns_none_for_system_only() {
+        assert_eq!(parse_pyenv_name("system"), None);
+    }
+
+    #[test]
+    fn test_parse_pyenv_name_ignores_empty_entries_and_whitespace() {
+        assert_eq!(
+            parse_pyenv_name(" : system : 3.11.8 "),
+            Some("3.11.8".to_string())
+        );
     }
 }

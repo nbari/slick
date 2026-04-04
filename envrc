@@ -62,6 +62,11 @@ export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
 # Rendered as: (<symbol> <toolbox-name>)
 #export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
 
+# DevPod marker symbol
+# Default: empty
+# Rendered as: (<symbol> <workspace-id>) or (<workspace-id>)
+#export SLICK_PROMPT_DEVPOD_SYMBOL=""
+
 # ==========================================
 # COLORS (256-color palette or named colors)
 # ==========================================
@@ -73,9 +78,18 @@ export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
 # Default: 196 (bright red)
 export SLICK_PROMPT_ERROR_COLOR=196
 
+# DevPod marker color
+# Default: 7 (white/gray)
+#export SLICK_PROMPT_DEVPOD_COLOR=7
+
 # Path color
 # Default: 74 (cyan/teal)
 export SLICK_PROMPT_PATH_COLOR=74
+
+# Python environment color (virtualenv/pyenv)
+# Default: 7 (white/gray)
+# Preferred over legacy PIPENV_ACTIVE_COLOR
+export SLICK_PROMPT_PYTHON_ENV_COLOR=7
 
 # Main symbol color
 # Default: 5 (magenta)
@@ -98,8 +112,8 @@ export SLICK_PROMPT_SSH_COLOR=8
 export SLICK_PROMPT_TIME_ELAPSED_COLOR=3
 
 # Toolbx marker color
-# Default: 6 (cyan)
-#export SLICK_PROMPT_TOOLBOX_COLOR=6
+# Default: 3 (yellow)
+#export SLICK_PROMPT_TOOLBOX_COLOR=3
 
 # ==========================================
 # GIT COLORS
@@ -182,3 +196,4 @@ export SLICK_PROMPT_GIT_AUTH_COLOR=red
 #export SLICK_PROMPT_ROOT_SYMBOL="👑"
 #export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔐"
 #export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
+#export SLICK_PROMPT_DEVPOD_SYMBOL="🧪"

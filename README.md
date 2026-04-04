@@ -161,10 +161,12 @@ export SLICK_PROMPT_VICMD_SYMBOL="❮"
 # Custom colors
 export SLICK_PROMPT_PATH_COLOR=blue
 export SLICK_PROMPT_SYMBOL_COLOR=magenta
+export SLICK_PROMPT_PYTHON_ENV_COLOR=7
+export SLICK_PROMPT_DEVPOD_COLOR=7
 
 # Toolbx marker
 export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"
-export SLICK_PROMPT_TOOLBOX_COLOR=cyan
+export SLICK_PROMPT_TOOLBOX_COLOR=yellow
 ```
 
 ### All Environment Variables
@@ -186,19 +188,22 @@ export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"       # Git ahead symbol
 export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
 export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"        # Toolbx marker symbol
+export SLICK_PROMPT_DEVPOD_SYMBOL=""           # DevPod marker symbol
 ```
 
 #### Colors
 ```bash
 # Colors can be named (red, blue, etc.) or numbers (0-255)
 export SLICK_PROMPT_ERROR_COLOR=196            # Error message color
+export SLICK_PROMPT_DEVPOD_COLOR=7             # DevPod marker color
 export SLICK_PROMPT_PATH_COLOR=74              # Directory path color
+export SLICK_PROMPT_PYTHON_ENV_COLOR=7         # Virtualenv/pyenv color
 export SLICK_PROMPT_SYMBOL_COLOR=5             # Prompt symbol color
 export SLICK_PROMPT_VICMD_COLOR=3              # Vi command mode color
 export SLICK_PROMPT_ROOT_COLOR=1               # Root user color
 export SLICK_PROMPT_SSH_COLOR=8                # SSH session color
 export SLICK_PROMPT_TIME_ELAPSED_COLOR=3       # Command time color
-export SLICK_PROMPT_TOOLBOX_COLOR=6            # Toolbx marker color
+export SLICK_PROMPT_TOOLBOX_COLOR=3            # Toolbx marker color
 ```
 
 #### Git Colors
@@ -212,6 +217,8 @@ export SLICK_PROMPT_GIT_REMOTE_COLOR=6         # Remote status color
 export SLICK_PROMPT_GIT_UNAME_COLOR=8          # Git username color
 export SLICK_PROMPT_GIT_AUTH_COLOR=red         # Git auth failed color
 ```
+
+`PIPENV_ACTIVE_COLOR` is still honored as a legacy fallback, but `SLICK_PROMPT_PYTHON_ENV_COLOR` is the preferred setting for Python environments.
 
 ### Example Configurations
 
@@ -263,7 +270,23 @@ Slick detects when it is running inside Fedora Toolbx and shows the toolbox name
 Configure the Toolbx marker:
 ```bash
 export SLICK_PROMPT_TOOLBOX_SYMBOL="🧰"   # Default
-export SLICK_PROMPT_TOOLBOX_COLOR=6       # Default
+export SLICK_PROMPT_TOOLBOX_COLOR=3       # Default
+```
+
+## DevPod Detection
+
+Slick detects when `DEVPOD` is set and shows `DEVPOD_WORKSPACE_ID` before the path.
+
+**Example:**
+```bash
+(hfile) ~/projects/slick main
+❯
+```
+
+Configure the DevPod marker:
+```bash
+export SLICK_PROMPT_DEVPOD_SYMBOL=""      # Default
+export SLICK_PROMPT_DEVPOD_COLOR=7        # Default
 ```
 
 ## 🔒 SSH Authentication Detection

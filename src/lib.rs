@@ -10,6 +10,8 @@ static ENV_CACHE: OnceLock<EnvDefaults> = OnceLock::new();
 
 struct EnvDefaults {
     cmd_max_exec_time: String,
+    devpod_color: String,
+    devpod_symbol: String,
     error_color: String,
     git_action_color: String,
     git_auth_color: String,
@@ -25,6 +27,7 @@ struct EnvDefaults {
     git_uname_color: String,
     non_breaking_space: String,
     path_color: String,
+    python_env_color: String,
     root_color: String,
     root_symbol: String,
     ssh_color: String,
@@ -42,6 +45,8 @@ impl EnvDefaults {
         Self {
             cmd_max_exec_time: env::var("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
                 .unwrap_or_else(|_| "5".into()),
+            devpod_color: env::var("SLICK_PROMPT_DEVPOD_COLOR").unwrap_or_else(|_| "7".into()),
+            devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_default(),
             error_color: env::var("SLICK_PROMPT_ERROR_COLOR").unwrap_or_else(|_| "196".into()),
             git_action_color: env::var("SLICK_PROMPT_GIT_ACTION_COLOR")
                 .unwrap_or_else(|_| "3".into()),
@@ -69,6 +74,8 @@ impl EnvDefaults {
             non_breaking_space: env::var("SLICK_PROMPT_NON_BREAKING_SPACE")
                 .unwrap_or_else(|_| "\u{a0}".into()),
             path_color: env::var("SLICK_PROMPT_PATH_COLOR").unwrap_or_else(|_| "74".into()),
+            python_env_color: env::var("SLICK_PROMPT_PYTHON_ENV_COLOR")
+                .unwrap_or_else(|_| "7".into()),
             root_color: env::var("SLICK_PROMPT_ROOT_COLOR").unwrap_or_else(|_| "1".into()),
             root_symbol: env::var("SLICK_PROMPT_ROOT_SYMBOL").unwrap_or_else(|_| "#".into()),
             ssh_color: env::var("SLICK_PROMPT_SSH_COLOR").unwrap_or_else(|_| "8".into()),
@@ -76,7 +83,7 @@ impl EnvDefaults {
             symbol_color: env::var("SLICK_PROMPT_SYMBOL_COLOR").unwrap_or_else(|_| "5".into()),
             time_elapsed_color: env::var("SLICK_PROMPT_TIME_ELAPSED_COLOR")
                 .unwrap_or_else(|_| "3".into()),
-            toolbox_color: env::var("SLICK_PROMPT_TOOLBOX_COLOR").unwrap_or_else(|_| "6".into()),
+            toolbox_color: env::var("SLICK_PROMPT_TOOLBOX_COLOR").unwrap_or_else(|_| "3".into()),
             toolbox_symbol: env::var("SLICK_PROMPT_TOOLBOX_SYMBOL").unwrap_or_else(|_| "🧰".into()),
             vicmd_color: env::var("SLICK_PROMPT_VICMD_COLOR").unwrap_or_else(|_| "3".into()),
             vicmd_symbol: env::var("SLICK_PROMPT_VICMD_SYMBOL").unwrap_or_else(|_| ">".into()),
@@ -90,6 +97,8 @@ pub fn get_env(e: &str) -> &str {
 
     match e {
         "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => &cache.cmd_max_exec_time,
+        "SLICK_PROMPT_DEVPOD_COLOR" => &cache.devpod_color,
+        "SLICK_PROMPT_DEVPOD_SYMBOL" => &cache.devpod_symbol,
         "SLICK_PROMPT_ERROR_COLOR" => &cache.error_color,
         "SLICK_PROMPT_GIT_ACTION_COLOR" => &cache.git_action_color,
         "SLICK_PROMPT_GIT_AUTH_COLOR" => &cache.git_auth_color,
@@ -105,6 +114,7 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_GIT_UNAME_COLOR" => &cache.git_uname_color,
         "SLICK_PROMPT_NON_BREAKING_SPACE" => &cache.non_breaking_space,
         "SLICK_PROMPT_PATH_COLOR" => &cache.path_color,
+        "SLICK_PROMPT_PYTHON_ENV_COLOR" => &cache.python_env_color,
         "SLICK_PROMPT_ROOT_COLOR" => &cache.root_color,
         "SLICK_PROMPT_ROOT_SYMBOL" => &cache.root_symbol,
         "SLICK_PROMPT_SSH_COLOR" => &cache.ssh_color,

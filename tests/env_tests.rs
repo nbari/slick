@@ -7,6 +7,8 @@ use slick::get_env;
 
 const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_CMD_MAX_EXEC_TIME",
+    "SLICK_PROMPT_DEVPOD_COLOR",
+    "SLICK_PROMPT_DEVPOD_SYMBOL",
     "SLICK_PROMPT_ERROR_COLOR",
     "SLICK_PROMPT_GIT_ACTION_COLOR",
     "SLICK_PROMPT_GIT_AUTH_COLOR",
@@ -22,6 +24,7 @@ const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_GIT_UNAME_COLOR",
     "SLICK_PROMPT_NON_BREAKING_SPACE",
     "SLICK_PROMPT_PATH_COLOR",
+    "SLICK_PROMPT_PYTHON_ENV_COLOR",
     "SLICK_PROMPT_ROOT_COLOR",
     "SLICK_PROMPT_ROOT_SYMBOL",
     "SLICK_PROMPT_SSH_COLOR",
@@ -33,6 +36,8 @@ const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_VICMD_COLOR",
     "SLICK_PROMPT_VICMD_SYMBOL",
 ];
+
+const OPTIONAL_EMPTY_ENV_VARS: &[&str] = &["SLICK_PROMPT_DEVPOD_SYMBOL"];
 
 #[test]
 fn test_get_env_returns_non_empty_defaults() {
@@ -54,10 +59,12 @@ fn test_get_env_git_remote_symbols_exist() {
 #[test]
 fn test_get_env_color_values_are_numeric_or_named() {
     let colors = [
+        "SLICK_PROMPT_DEVPOD_COLOR",
         "SLICK_PROMPT_ERROR_COLOR",
         "SLICK_PROMPT_PATH_COLOR",
         "SLICK_PROMPT_GIT_BRANCH_COLOR",
         "SLICK_PROMPT_GIT_STATUS_COLOR",
+        "SLICK_PROMPT_PYTHON_ENV_COLOR",
         "SLICK_PROMPT_ROOT_COLOR",
         "SLICK_PROMPT_SSH_COLOR",
         "SLICK_PROMPT_SYMBOL_COLOR",
@@ -96,14 +103,19 @@ fn test_get_env_special_chars() {
 
     let toolbox_symbol = get_env("SLICK_PROMPT_TOOLBOX_SYMBOL");
     assert!(!toolbox_symbol.is_empty());
+
+    let devpod_symbol = get_env("SLICK_PROMPT_DEVPOD_SYMBOL");
+    assert_eq!(devpod_symbol, "");
 }
 
 #[test]
 fn test_all_env_vars_have_defaults() {
     for var in ALL_ENV_VARS {
         let value = get_env(var);
-        assert!(!value.is_empty(), "{var} should have a default value");
         assert_ne!(value, "??", "{var} should resolve to a known default");
+        if !OPTIONAL_EMPTY_ENV_VARS.contains(var) {
+            assert!(!value.is_empty(), "{var} should have a default value");
+        }
     }
 }
 
