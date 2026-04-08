@@ -76,6 +76,22 @@ zinit light nbari/slick
 
 If you already have your own `accept-line`, `zle-line-init`, or `zle-keymap-select` widgets, load them before `slick.zsh`. The loader preserves and chains existing widgets instead of replacing them.
 
+### Cursor Shape Notes
+
+`slick` emits a cursor-shape escape from the shell integration when Zsh regains control of the prompt. The default is `SLICK_PROMPT_CURSOR_SHAPE=4`, which selects a steady underline. Set `SLICK_PROMPT_CURSOR_SHAPE` to another supported value, or set it to an empty string to disable cursor-shape output entirely.
+
+If you want to manage it yourself with the `DECSCUSR` escape sequence (`\e[Ps q`), these values are commonly supported:
+
+```sh
+# 0  blinking block
+# 1  blinking block (default)
+# 2  steady block
+# 3  blinking underline
+# 4  steady underline
+# 5  blinking bar (xterm)
+# 6  steady bar (xterm)
+```
+
 ## 🔤 Font Setup
 
 **Seeing boxes (□) instead of symbols?** You need a Nerd Font.
@@ -135,6 +151,7 @@ export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5        # Max command time to display (se
 export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0=no)
 export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=show)
 export SLICK_PROMPT_NON_BREAKING_SPACE=" "     # Non-breaking space character
+export SLICK_PROMPT_CURSOR_SHAPE=4             # Cursor shape sent by slick.zsh; empty disables
 export SLICK_PROMPT_TRANSIENT=1                # Compact previous prompt in scrollback (0=disable)
 ```
 

@@ -8,6 +8,7 @@ use slick::get_env;
 const ALL_ENV_VARS: &[&str] = &[
     "SLICK_PROMPT_AWS_COLOR",
     "SLICK_PROMPT_CMD_MAX_EXEC_TIME",
+    "SLICK_PROMPT_CURSOR_SHAPE",
     "SLICK_PROMPT_DEVPOD_COLOR",
     "SLICK_PROMPT_DEVPOD_SYMBOL",
     "SLICK_PROMPT_ERROR_COLOR",
@@ -105,6 +106,15 @@ fn test_get_env_max_exec_time_is_numeric() {
     assert!(
         val.parse::<u64>().is_ok(),
         "CMD_MAX_EXEC_TIME should be numeric"
+    );
+}
+
+#[test]
+fn test_get_env_cursor_shape_is_supported() {
+    let val = get_env("SLICK_PROMPT_CURSOR_SHAPE");
+    assert!(
+        matches!(val, "0" | "1" | "2" | "3" | "4" | "5" | "6"),
+        "CURSOR_SHAPE should be one of the supported DECSCUSR values"
     );
 }
 

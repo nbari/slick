@@ -12,6 +12,7 @@ static ENV_CACHE: OnceLock<EnvDefaults> = OnceLock::new();
 struct EnvDefaults {
     aws_color: String,
     cmd_max_exec_time: String,
+    cursor_shape: String,
     devpod_color: String,
     devpod_symbol: String,
     k8s_color: String,
@@ -52,6 +53,7 @@ impl EnvDefaults {
             aws_color: env::var("SLICK_PROMPT_AWS_COLOR").unwrap_or_else(|_| "7".into()),
             cmd_max_exec_time: env::var("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
                 .unwrap_or_else(|_| "5".into()),
+            cursor_shape: env::var("SLICK_PROMPT_CURSOR_SHAPE").unwrap_or_else(|_| "4".into()),
             devpod_color: env::var("SLICK_PROMPT_DEVPOD_COLOR").unwrap_or_else(|_| "7".into()),
             devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_else(|_| "".into()),
             k8s_color: env::var("SLICK_PROMPT_K8S_COLOR").unwrap_or_else(|_| "7".into()),
@@ -112,6 +114,7 @@ pub fn get_env(e: &str) -> &str {
     match e {
         "SLICK_PROMPT_AWS_COLOR" => &cache.aws_color,
         "SLICK_PROMPT_CMD_MAX_EXEC_TIME" => &cache.cmd_max_exec_time,
+        "SLICK_PROMPT_CURSOR_SHAPE" => &cache.cursor_shape,
         "SLICK_PROMPT_DEVPOD_COLOR" => &cache.devpod_color,
         "SLICK_PROMPT_DEVPOD_SYMBOL" => &cache.devpod_symbol,
         "SLICK_PROMPT_ERROR_COLOR" => &cache.error_color,

@@ -1,3 +1,15 @@
+## 0.20.1 (2026-04-08)
+
+### Added
+- Added `SLICK_PROMPT_CURSOR_SHAPE` to control the `DECSCUSR` cursor style emitted by `slick.zsh`. The default is `4` (steady underline), supported values are `0` through `6`, and setting it to an empty string disables cursor-shape output entirely.
+
+### Changed
+- Changed cursor-shape handling so `slick.zsh` reapplies the configured cursor when Zsh regains prompt control via `zle-line-init` and `zle-keymap-select`, instead of emitting it unconditionally during `preexec`.
+- Updated the README and sample `envrc` to document the supported cursor-shape values and how to disable the behavior.
+
+### Fixed
+- Reduced prompt interference with full-screen terminal applications such as Neovim by keeping cursor-shape control tied to ZLE/prompt ownership instead of command launch.
+
 ## 0.20.0 (2026-04-04)
 
 ### Added

@@ -109,8 +109,12 @@ assert_no_call() {
 # preexec must tear down the async prompt FD before command output starts.
 exec {test_fd}< <(sleep 5)
 typeset -g slick_prompt_fd=$test_fd
-slick_prompt_preexec
+PREEXEC_OUTPUT_FILE=$(mktemp)
+slick_prompt_preexec >"$PREEXEC_OUTPUT_FILE"
+PREEXEC_OUTPUT=$(<"$PREEXEC_OUTPUT_FILE")
+rm -f "$PREEXEC_OUTPUT_FILE"
 [[ -z ${slick_prompt_fd-} ]] || die "slick_prompt_fd should be unset after preexec"
+[[ -z "$PREEXEC_OUTPUT" ]] || die "slick_prompt_preexec should not emit cursor-shape output"
 fd_is_open $test_fd && die "preexec should close the async prompt fd"
 assert_contains_call "-F $test_fd"
 
@@ -145,16 +149,36 @@ assert_no_call ".accept-line"
 # Loader wrappers should preserve existing line-init and keymap-select widgets.
 ZLE_CALLS=()
 ORIGINAL_LINE_INIT_CALLED=0
-slick_prompt_zle_line_init
+LINE_INIT_OUTPUT_FILE=$(mktemp)
+slick_prompt_zle_line_init >"$LINE_INIT_OUTPUT_FILE"
+LINE_INIT_OUTPUT=$(<"$LINE_INIT_OUTPUT_FILE")
+rm -f "$LINE_INIT_OUTPUT_FILE"
 [[ $ORIGINAL_LINE_INIT_CALLED -eq 1 ]] || die "zle-line-init wrapper should call the preserved widget"
+[[ "$LINE_INIT_OUTPUT" == $'\e[4 q' ]] || die "zle-line-init should emit the default cursor shape"
 assert_contains_call "reset-prompt"
 assert_contains_call "slick_prompt_original_zle_line_init"
 
 ZLE_CALLS=()
 ORIGINAL_KEYMAP_CALLED=0
-slick_prompt_zle_keymap_select
+KEYMAP_OUTPUT_FILE=$(mktemp)
+slick_prompt_zle_keymap_select >"$KEYMAP_OUTPUT_FILE"
+KEYMAP_OUTPUT=$(<"$KEYMAP_OUTPUT_FILE")
+rm -f "$KEYMAP_OUTPUT_FILE"
 [[ $ORIGINAL_KEYMAP_CALLED -eq 1 ]] || die "zle-keymap-select wrapper should call the preserved widget"
+[[ "$KEYMAP_OUTPUT" == $'\e[4 q' ]] || die "zle-keymap-select should emit the default cursor shape"
 assert_contains_call "reset-prompt"
 assert_contains_call "slick_prompt_original_zle_keymap_select"
+
+LINE_INIT_OUTPUT_FILE=$(mktemp)
+SLICK_PROMPT_CURSOR_SHAPE=6 slick_prompt_zle_line_init >"$LINE_INIT_OUTPUT_FILE"
+LINE_INIT_OUTPUT=$(<"$LINE_INIT_OUTPUT_FILE")
+rm -f "$LINE_INIT_OUTPUT_FILE"
+[[ "$LINE_INIT_OUTPUT" == $'\e[6 q' ]] || die "zle-line-init should honor a custom cursor shape"
+
+KEYMAP_OUTPUT_FILE=$(mktemp)
+SLICK_PROMPT_CURSOR_SHAPE='' slick_prompt_zle_keymap_select >"$KEYMAP_OUTPUT_FILE"
+KEYMAP_OUTPUT=$(<"$KEYMAP_OUTPUT_FILE")
+rm -f "$KEYMAP_OUTPUT_FILE"
+[[ -z "$KEYMAP_OUTPUT" ]] || die "zle-keymap-select should allow disabling cursor-shape output"
 
 print -r -- "slick.zsh regression tests passed"
