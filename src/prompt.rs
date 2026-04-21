@@ -215,6 +215,14 @@ fn trim_trailing_space(prompt: &mut String) {
     }
 }
 
+fn append_cursor_shape(prompt: &mut String, _keymap: &str) {
+    let cursor_shape = get_env("SLICK_PROMPT_CURSOR_SHAPE");
+
+    if !cursor_shape.is_empty() && (0..=6).contains(&cursor_shape.parse::<u8>().unwrap_or(255)) {
+        let _ = write!(prompt, "%{{\x1b[{cursor_shape} q%}}");
+    }
+}
+
 fn build_transient_prompt(
     deserialized: &Prompt,
     is_root_user: bool,
@@ -222,9 +230,11 @@ fn build_transient_prompt(
     symbol: &str,
     prompt_symbol_color: &str,
     transient_timestamp: &str,
+    keymap: &str,
 ) -> String {
     let mut prompt = String::with_capacity(256);
 
+    append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
 
     if !transient_timestamp.is_empty() {
@@ -260,9 +270,11 @@ fn build_full_prompt(
     symbol: &str,
     prompt_symbol_color: &str,
     time_elapsed: u64,
+    keymap: &str,
 ) -> String {
     let mut prompt = String::with_capacity(256);
 
+    append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
     append_context_markers(&mut prompt);
     append_git_user_name(&mut prompt, deserialized);
@@ -315,6 +327,7 @@ pub fn display(matches: &ArgMatches) {
                 &symbol,
                 &prompt_symbol_color,
                 transient_timestamp,
+                &keymap,
             )
         );
         return;
@@ -329,6 +342,7 @@ pub fn display(matches: &ArgMatches) {
             &symbol,
             &prompt_symbol_color,
             parse_time_elapsed(matches),
+            &keymap,
         )
     );
 }

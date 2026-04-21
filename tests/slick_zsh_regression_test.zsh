@@ -154,7 +154,7 @@ slick_prompt_zle_line_init >"$LINE_INIT_OUTPUT_FILE"
 LINE_INIT_OUTPUT=$(<"$LINE_INIT_OUTPUT_FILE")
 rm -f "$LINE_INIT_OUTPUT_FILE"
 [[ $ORIGINAL_LINE_INIT_CALLED -eq 1 ]] || die "zle-line-init wrapper should call the preserved widget"
-[[ "$LINE_INIT_OUTPUT" == $'\e[4 q' ]] || die "zle-line-init should emit the default cursor shape"
+[[ "$PROMPT" == "render:0" ]] || die "zle-line-init should update PROMPT"
 assert_contains_call "reset-prompt"
 assert_contains_call "slick_prompt_original_zle_line_init"
 
@@ -165,20 +165,8 @@ slick_prompt_zle_keymap_select >"$KEYMAP_OUTPUT_FILE"
 KEYMAP_OUTPUT=$(<"$KEYMAP_OUTPUT_FILE")
 rm -f "$KEYMAP_OUTPUT_FILE"
 [[ $ORIGINAL_KEYMAP_CALLED -eq 1 ]] || die "zle-keymap-select wrapper should call the preserved widget"
-[[ "$KEYMAP_OUTPUT" == $'\e[4 q' ]] || die "zle-keymap-select should emit the default cursor shape"
+[[ "$PROMPT" == "render:0" ]] || die "zle-keymap-select should update PROMPT"
 assert_contains_call "reset-prompt"
 assert_contains_call "slick_prompt_original_zle_keymap_select"
-
-LINE_INIT_OUTPUT_FILE=$(mktemp)
-SLICK_PROMPT_CURSOR_SHAPE=6 slick_prompt_zle_line_init >"$LINE_INIT_OUTPUT_FILE"
-LINE_INIT_OUTPUT=$(<"$LINE_INIT_OUTPUT_FILE")
-rm -f "$LINE_INIT_OUTPUT_FILE"
-[[ "$LINE_INIT_OUTPUT" == $'\e[6 q' ]] || die "zle-line-init should honor a custom cursor shape"
-
-KEYMAP_OUTPUT_FILE=$(mktemp)
-SLICK_PROMPT_CURSOR_SHAPE='' slick_prompt_zle_keymap_select >"$KEYMAP_OUTPUT_FILE"
-KEYMAP_OUTPUT=$(<"$KEYMAP_OUTPUT_FILE")
-rm -f "$KEYMAP_OUTPUT_FILE"
-[[ -z "$KEYMAP_OUTPUT" ]] || die "zle-keymap-select should allow disabling cursor-shape output"
 
 print -r -- "slick.zsh regression tests passed"

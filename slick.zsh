@@ -56,15 +56,6 @@ function slick_prompt_transient_enabled {
     [[ "${SLICK_PROMPT_TRANSIENT:-1}" != "0" ]]
 }
 
-function slick_prompt_apply_cursor_shape {
-    local cursor_shape="${SLICK_PROMPT_CURSOR_SHAPE-4}"
-
-    [[ -n "$cursor_shape" ]] || return 0
-    [[ "$cursor_shape" == [0-6] ]] || return 0
-
-    printf '\e[%s q' "$cursor_shape"
-}
-
 function slick_prompt_rfc3339_timestamp {
     local timestamp
 
@@ -127,7 +118,6 @@ function slick_prompt_refresh {
 }
 
 function slick_prompt_zle_line_init {
-    slick_prompt_apply_cursor_shape
     PROMPT=$(slick_prompt_render 0)
     zle && zle reset-prompt
 
@@ -137,7 +127,6 @@ function slick_prompt_zle_line_init {
 }
 
 function slick_prompt_zle_keymap_select {
-    slick_prompt_apply_cursor_shape
     PROMPT=$(slick_prompt_render 0)
     zle && zle reset-prompt
 

@@ -1,3 +1,15 @@
+## 0.21.0 (2026-04-21)
+
+### Added
+- Added robust cursor-shape management by including the `DECSCUSR` escape sequence directly in the rendered prompt string. This ensures the terminal cursor is reapplied on every prompt redraw (including after exiting full-screen applications like Neovim) regardless of shell-widget initialization state.
+
+### Changed
+- Refined Vi-mode behavior: while the prompt symbol still changes from `$` to `>` in `vicmd` mode, the cursor shape now stays consistent based on `SLICK_PROMPT_CURSOR_SHAPE` to reduce visual noise.
+- Removed `slick_prompt_apply_cursor_shape` from `slick.zsh`, as the cursor shape is now "baked into" the `slick prompt` output.
+
+### Fixed
+- Fixed the issue where the terminal cursor would reset to a block after exiting Neovim or other full-screen terminal applications.
+
 ## 0.20.1 (2026-04-08)
 
 ### Added
