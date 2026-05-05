@@ -5,8 +5,14 @@ set -eo pipefail
 ROOT_DIR=${${(%):-%N}:A:h:h}
 cd "$ROOT_DIR"
 
-if [[ ! -x ./target/release/slick ]]; then
-    print -u2 -- "error: expected ./target/release/slick to exist"
+if [[ -n "$CARGO_TARGET_DIR" ]]; then
+    SLICK_BINARY="$CARGO_TARGET_DIR/release/slick"
+else
+    SLICK_BINARY="./target/release/slick"
+fi
+
+if [[ ! -x "$SLICK_BINARY" ]]; then
+    print -u2 -- "error: expected $SLICK_BINARY to exist"
     exit 1
 fi
 
@@ -16,7 +22,7 @@ typeset -gi ORIGINAL_ACCEPT_LINE_CALLED=0
 typeset -gi ORIGINAL_LINE_INIT_CALLED=0
 typeset -gi ORIGINAL_KEYMAP_CALLED=0
 
-export SLICK_PATH="$ROOT_DIR/target/release/slick"
+export SLICK_PATH="$SLICK_BINARY"
 
 die() {
     print -u2 -- "error: $1"

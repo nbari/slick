@@ -35,7 +35,11 @@ info() {
 
 # Get absolute path to slick binary
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SLICK="$SCRIPT_DIR/target/release/slick"
+if [ -n "$CARGO_TARGET_DIR" ]; then
+    SLICK="$CARGO_TARGET_DIR/release/slick"
+else
+    SLICK="$SCRIPT_DIR/target/release/slick"
+fi
 
 if [ ! -f "$SLICK" ]; then
     echo -e "${RED}Error: Binary not found at $SLICK${NC}"

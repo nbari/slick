@@ -59,8 +59,13 @@ function slick_prompt_transient_enabled {
 function slick_prompt_rfc3339_timestamp {
     local timestamp
 
-    strftime -s timestamp '%Y-%m-%dT%H:%M:%S%z' $EPOCHSECONDS
-    print -r -- "${timestamp[1,-3]}:${timestamp[-2,-1]}"
+    if [[ "${SLICK_PROMPT_SHORT_TIMESTAMP:-0}" == "1" ]]; then
+        strftime -s timestamp '%H:%M:%S' $EPOCHSECONDS
+        print -r -- "$timestamp"
+    else
+        strftime -s timestamp '%Y-%m-%dT%H:%M:%S%z' $EPOCHSECONDS
+        print -r -- "${timestamp[1,-3]}:${timestamp[-2,-1]}"
+    fi
 }
 
 function slick_prompt_render {

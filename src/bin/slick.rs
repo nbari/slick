@@ -47,6 +47,9 @@ The default values are:
     SLICK_PROMPT_ROOT_COLOR=1
     SLICK_PROMPT_ROOT_SYMBOL=#
     SLICK_PROMPT_SSH_COLOR=8
+    SLICK_PROMPT_AUTO_SHORT_CONTEXT=0 (if set to 1 uses only symbols for markers)
+    SLICK_PROMPT_SHORT_PATH=0 (if set to 1 uses %c for path)
+    SLICK_PROMPT_SHORT_TIMESTAMP=0 (if set to 1 uses %H:%M:%S in transient prompt)
     SLICK_PROMPT_SYMBOL="$"
     SLICK_PROMPT_SYMBOL_COLOR=5
     SLICK_PROMPT_TIME_ELAPSED_COLOR=3

@@ -1,3 +1,13 @@
+## 0.22.0 (2026-05-05)
+
+### Added
+- Added `SLICK_PROMPT_AUTO_SHORT_CONTEXT` (default `0`) to automatically shorten context markers to their symbols or a very brief label (e.g., `(aws)` instead of `(aws profile)`). Set to `1` to enable.
+- Added `SLICK_PROMPT_SHORT_PATH` (default `0`) to show only the last component of the path (`%c`) instead of the full path (`%~`). Set to `1` to enable.
+- Added `SLICK_PROMPT_SHORT_TIMESTAMP` (default `0`) to display only the time (`HH:MM:SS`) in the transient prompt instead of the full RFC 3339 date and time string. Set to `1` to enable.
+
+### Changed
+- Updated the dependencies to their latest compatible versions via `cargo upgrade`.
+
 ## 0.21.0 (2026-04-21)
 
 ### Added

@@ -48,8 +48,8 @@ fn append_identity_prefix(prompt: &mut String, is_root_user: bool, is_remote_use
     }
 }
 
-fn append_context_markers(prompt: &mut String) {
-    for marker in collect_context_markers() {
+fn append_context_markers(prompt: &mut String, short: bool) {
+    for marker in collect_context_markers(short) {
         let _ = write!(prompt, "%F{{{}}}{} ", marker.color, marker.text);
     }
 }
@@ -244,8 +244,18 @@ fn build_transient_prompt(
         );
     }
 
-    append_context_markers(&mut prompt);
-    let _ = write!(prompt, "%F{{{}}}%~", get_env("SLICK_PROMPT_PATH_COLOR"));
+    let short = get_env("SLICK_PROMPT_AUTO_SHORT_CONTEXT") == "1";
+    append_context_markers(&mut prompt, short);
+    let path_symbol = if get_env("SLICK_PROMPT_SHORT_PATH") == "1" {
+        "%c"
+    } else {
+        "%~"
+    };
+    let _ = write!(
+        prompt,
+        "%F{{{}}}{path_symbol}",
+        get_env("SLICK_PROMPT_PATH_COLOR")
+    );
 
     if !deserialized.branch.is_empty() {
         prompt.push(' ');
@@ -276,10 +286,21 @@ fn build_full_prompt(
 
     append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
-    append_context_markers(&mut prompt);
+
+    let short = get_env("SLICK_PROMPT_AUTO_SHORT_CONTEXT") == "1";
+    append_context_markers(&mut prompt, short);
     append_git_user_name(&mut prompt, deserialized);
 
-    let _ = write!(prompt, "%F{{{}}}%~ ", get_env("SLICK_PROMPT_PATH_COLOR"));
+    let path_symbol = if get_env("SLICK_PROMPT_SHORT_PATH") == "1" {
+        "%c"
+    } else {
+        "%~"
+    };
+    let _ = write!(
+        prompt,
+        "%F{{{}}}{path_symbol} ",
+        get_env("SLICK_PROMPT_PATH_COLOR")
+    );
 
     append_git_metadata(&mut prompt, deserialized);
     append_elapsed(&mut prompt, time_elapsed);

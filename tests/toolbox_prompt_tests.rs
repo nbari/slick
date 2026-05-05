@@ -44,6 +44,7 @@ fn test_toolbox_marker_renders_with_default_symbol_before_path() {
     let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("SLICK_TEST_TOOLBOXENV_PATH", &toolboxenv_path)
         .env("SLICK_TEST_CONTAINERENV_PATH", &containerenv_path)
@@ -66,6 +67,7 @@ fn test_toolbox_marker_uses_custom_symbol_and_color() {
     let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("SLICK_PROMPT_TOOLBOX_SYMBOL", "📦")
         .env("SLICK_PROMPT_TOOLBOX_COLOR", "42")
@@ -87,6 +89,7 @@ fn test_toolbox_marker_is_absent_without_toolbox_metadata() {
     let missing_containerenv = tempdir.path().join(".missing-containerenv");
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("SLICK_PROMPT_TOOLBOX_SYMBOL", "📦")
         .env("SLICK_TEST_TOOLBOXENV_PATH", missing_toolboxenv)
@@ -106,6 +109,7 @@ fn test_toolbox_marker_precedes_virtual_env_marker() {
     let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("VIRTUAL_ENV", "/tmp/venvs/project")
         .env("SLICK_TEST_TOOLBOXENV_PATH", &toolboxenv_path)
@@ -129,6 +133,7 @@ fn test_toolbox_marker_precedes_virtual_env_marker() {
 #[test]
 fn test_devpod_marker_renders_before_path() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("DEVPOD", "true")
         .env("DEVPOD_WORKSPACE_ID", "hfile")
@@ -149,6 +154,7 @@ fn test_devpod_marker_renders_before_path() {
 #[test]
 fn test_devpod_marker_uses_custom_symbol_and_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("DEVPOD", "true")
         .env("DEVPOD_WORKSPACE_ID", "hfile")
@@ -166,6 +172,7 @@ fn test_devpod_marker_uses_custom_symbol_and_color() {
 #[test]
 fn test_devpod_marker_precedes_virtual_env_marker() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("DEVPOD", "true")
         .env("DEVPOD_WORKSPACE_ID", "hfile")
@@ -189,6 +196,7 @@ fn test_devpod_marker_precedes_virtual_env_marker() {
 #[test]
 fn test_virtualenv_marker_uses_configured_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("VIRTUAL_ENV", "/tmp/venvs/project")
         .env("SLICK_PROMPT_PYTHON_ENV_COLOR", "42")
@@ -204,6 +212,7 @@ fn test_virtualenv_marker_uses_configured_color() {
 #[test]
 fn test_git_branch_renders_with_default_symbol() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -230,6 +239,7 @@ fn test_git_branch_renders_with_default_symbol() {
 #[test]
 fn test_git_branch_symbol_can_be_disabled_with_empty_string() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -258,6 +268,7 @@ fn test_git_branch_symbol_can_be_disabled_with_empty_string() {
 #[test]
 fn test_git_branch_renders_with_custom_symbol() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -285,6 +296,7 @@ fn test_git_branch_renders_with_custom_symbol() {
 #[test]
 fn test_git_branch_symbol_uses_custom_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -312,6 +324,7 @@ fn test_git_branch_symbol_uses_custom_color() {
 #[test]
 fn test_git_main_branch_color_prefers_main_env_var() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -340,6 +353,7 @@ fn test_git_main_branch_color_prefers_main_env_var() {
 #[test]
 fn test_git_main_branch_color_falls_back_to_master_env_var() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "-e",
@@ -367,6 +381,7 @@ fn test_git_main_branch_color_falls_back_to_master_env_var() {
 #[test]
 fn test_pyenv_marker_renders_with_python_env_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PYENV_VERSION", "3.12.1/envs/project")
         .env("SLICK_PROMPT_PYTHON_ENV_COLOR", "99")
@@ -382,6 +397,7 @@ fn test_pyenv_marker_renders_with_python_env_color() {
 #[test]
 fn test_pipenv_marker_keeps_internal_hyphens() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PIPENV_ACTIVE", "1")
         .env("VIRTUAL_ENV", "/tmp/venvs/my-app-a1b2c3d4")
@@ -398,6 +414,7 @@ fn test_pipenv_marker_keeps_internal_hyphens() {
 #[test]
 fn test_python_env_color_falls_back_to_legacy_pipenv_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PIPENV_ACTIVE", "1")
         .env("PIPENV_ACTIVE_COLOR", "88")
@@ -414,6 +431,7 @@ fn test_python_env_color_falls_back_to_legacy_pipenv_color() {
 #[test]
 fn test_pyenv_system_only_marker_is_suppressed() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PYENV_VERSION", "system")
         .output()
@@ -428,6 +446,7 @@ fn test_pyenv_system_only_marker_is_suppressed() {
 #[test]
 fn test_pyenv_marker_uses_first_real_entry() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PYENV_VERSION", "system:3.12.1/envs/project")
         .output()
@@ -443,6 +462,7 @@ fn test_pyenv_marker_uses_first_real_entry() {
 #[test]
 fn test_pyenv_color_does_not_fall_back_to_legacy_pipenv_color() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("PYENV_VERSION", "3.12.1/envs/project")
         .env("PIPENV_ACTIVE_COLOR", "88")
@@ -459,6 +479,7 @@ fn test_pyenv_color_does_not_fall_back_to_legacy_pipenv_color() {
 #[test]
 fn test_transient_prompt_renders_single_line_with_timestamp() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "--transient",
@@ -490,6 +511,7 @@ fn test_transient_prompt_keeps_context_markers_but_stays_compact() {
     let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "--transient",
@@ -522,6 +544,7 @@ fn test_transient_prompt_keeps_context_markers_but_stays_compact() {
 #[test]
 fn test_aws_marker_renders_before_path_with_profile() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("AWS_PROFILE", "prod")
         .output()
@@ -542,6 +565,7 @@ fn test_aws_marker_renders_before_path_with_profile() {
 #[test]
 fn test_k8s_marker_renders_kubeconfig_basename_before_path() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("KUBECONFIG", "/tmp/dev-cluster:/tmp/prod-cluster")
         .output()
@@ -564,6 +588,7 @@ fn test_context_marker_order_includes_aws_and_k8s() {
     let (_tempdir, toolboxenv_path, containerenv_path) = write_toolbox_metadata();
 
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
         .env("SLICK_TEST_TOOLBOXENV_PATH", &toolboxenv_path)
         .env("SLICK_TEST_CONTAINERENV_PATH", &containerenv_path)
@@ -603,6 +628,7 @@ fn test_context_marker_order_includes_aws_and_k8s() {
 #[test]
 fn test_transient_prompt_includes_aws_and_k8s_markers() {
     let output = Command::new(get_slick_binary())
+        .env("SLICK_PROMPT_AUTO_SHORT_CONTEXT", "0")
         .args([
             "prompt",
             "--transient",

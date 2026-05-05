@@ -45,6 +45,9 @@ struct EnvDefaults {
     toolbox_symbol: String,
     vicmd_color: String,
     vicmd_symbol: String,
+    short_path: String,
+    short_timestamp: String,
+    auto_short_context: String,
 }
 
 impl EnvDefaults {
@@ -103,6 +106,11 @@ impl EnvDefaults {
             toolbox_symbol: env::var("SLICK_PROMPT_TOOLBOX_SYMBOL").unwrap_or_else(|_| "▣".into()),
             vicmd_color: env::var("SLICK_PROMPT_VICMD_COLOR").unwrap_or_else(|_| "3".into()),
             vicmd_symbol: env::var("SLICK_PROMPT_VICMD_SYMBOL").unwrap_or_else(|_| ">".into()),
+            short_path: env::var("SLICK_PROMPT_SHORT_PATH").unwrap_or_else(|_| "0".into()),
+            short_timestamp: env::var("SLICK_PROMPT_SHORT_TIMESTAMP")
+                .unwrap_or_else(|_| "0".into()),
+            auto_short_context: env::var("SLICK_PROMPT_AUTO_SHORT_CONTEXT")
+                .unwrap_or_else(|_| "0".into()),
         }
     }
 }
@@ -149,6 +157,9 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_TOOLBOX_SYMBOL" => &cache.toolbox_symbol,
         "SLICK_PROMPT_VICMD_COLOR" => &cache.vicmd_color,
         "SLICK_PROMPT_VICMD_SYMBOL" => &cache.vicmd_symbol,
+        "SLICK_PROMPT_SHORT_PATH" => &cache.short_path,
+        "SLICK_PROMPT_SHORT_TIMESTAMP" => &cache.short_timestamp,
+        "SLICK_PROMPT_AUTO_SHORT_CONTEXT" => &cache.auto_short_context,
         _ => "??",
     }
 }
