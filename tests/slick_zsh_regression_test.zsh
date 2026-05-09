@@ -111,6 +111,11 @@ assert_no_call() {
     done
 }
 
+SLICK_PROMPT_SHORT_TIMESTAMP=1
+TIMESTAMP_OUTPUT=$(slick_prompt_rfc3339_timestamp)
+[[ "$TIMESTAMP_OUTPUT" == <->:<->:<-> ]] || die "short timestamp should use HH:MM:SS"
+[[ "$TIMESTAMP_OUTPUT" != *T* ]] || die "short timestamp should not use RFC3339"
+
 # Regression guard for the macOS flicker/output-clearing bug:
 # preexec must tear down the async prompt FD before command output starts.
 exec {test_fd}< <(sleep 5)
@@ -130,10 +135,12 @@ ACCEPT_LINE_CALLED=0
 ORIGINAL_ACCEPT_LINE_CALLED=0
 PROMPT="full"
 SLICK_PROMPT_TRANSIENT=1
+SLICK_PROMPT_SHORT_TIMESTAMP=1
 slick_prompt_accept_line
 [[ $ACCEPT_LINE_CALLED -eq 0 ]] || die "accept-line wrapper should not bypass the preserved widget"
 [[ $ORIGINAL_ACCEPT_LINE_CALLED -eq 1 ]] || die "accept-line wrapper must call the preserved widget"
 [[ "$PROMPT" == render:* ]] || die "transient accept-line should replace PROMPT"
+[[ "$PROMPT" == render:*\ 1\ [0-9][0-9]:[0-9][0-9]:[0-9][0-9] ]] || die "accept-line should pass the short transient timestamp"
 assert_contains_call "reset-prompt"
 assert_contains_call "slick_prompt_original_accept_line"
 assert_no_call ".accept-line"

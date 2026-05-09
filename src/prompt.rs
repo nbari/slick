@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     env,
     fmt::Write as _,
+    path::{Component, Path, PathBuf},
     process::exit,
     time::{Duration, SystemTime},
 };
@@ -48,10 +49,101 @@ fn append_identity_prefix(prompt: &mut String, is_root_user: bool, is_remote_use
     }
 }
 
-fn append_context_markers(prompt: &mut String, short: bool) {
+fn append_context_markers(prompt: &mut String) {
+    let short = get_env("SLICK_PROMPT_SHORT_CONTEXT") == "1";
     for marker in collect_context_markers(short) {
         let _ = write!(prompt, "%F{{{}}}{} ", marker.color, marker.text);
     }
+}
+
+fn escape_prompt_literal(segment: &str) -> String {
+    segment.replace('%', "%%")
+}
+
+fn compact_path_segments<'a>(segments: impl Iterator<Item = &'a str>) -> String {
+    let parts: Vec<&str> = segments.collect();
+    if parts.is_empty() {
+        return String::new();
+    }
+
+    let mut compacted = String::new();
+    for (index, part) in parts.iter().enumerate() {
+        if index > 0 {
+            compacted.push('/');
+        }
+
+        if index + 1 == parts.len() {
+            compacted.push_str(&escape_prompt_literal(part));
+        } else if let Some(ch) = part.chars().next() {
+            compacted.push(ch);
+        }
+    }
+
+    compacted
+}
+
+fn compact_path(path: &Path, home: Option<&Path>) -> String {
+    if let Some(home) = home
+        && let Ok(relative) = path.strip_prefix(home)
+    {
+        let rendered = compact_path_segments(
+            relative
+                .iter()
+                .filter_map(|segment| segment.to_str())
+                .filter(|segment| !segment.is_empty()),
+        );
+
+        return if rendered.is_empty() {
+            "~".to_string()
+        } else {
+            format!("~/{rendered}")
+        };
+    }
+
+    let mut prefix = String::new();
+    let mut segments = Vec::new();
+
+    for component in path.components() {
+        match component {
+            Component::RootDir => prefix.push('/'),
+            Component::Normal(segment) => {
+                if let Some(segment) = segment.to_str() {
+                    segments.push(segment);
+                }
+            }
+            Component::CurDir => segments.push("."),
+            Component::ParentDir => segments.push(".."),
+            Component::Prefix(prefix_component) => {
+                prefix.push_str(&prefix_component.as_os_str().to_string_lossy());
+            }
+        }
+    }
+
+    let rendered = compact_path_segments(segments.into_iter());
+    if rendered.is_empty() {
+        if prefix.is_empty() {
+            ".".to_string()
+        } else {
+            prefix
+        }
+    } else if prefix.is_empty() {
+        rendered
+    } else if prefix.ends_with('/') {
+        format!("{prefix}{rendered}")
+    } else {
+        format!("{prefix}/{rendered}")
+    }
+}
+
+fn current_path_symbol() -> String {
+    if get_env("SLICK_PROMPT_SHORT_PATH") != "1" {
+        return "%~".to_string();
+    }
+
+    let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    let home_dir = env::var_os("HOME").map(PathBuf::from);
+
+    compact_path(&current_dir, home_dir.as_deref())
 }
 
 fn append_branch(prompt: &mut String, branch: &str) {
@@ -244,13 +336,8 @@ fn build_transient_prompt(
         );
     }
 
-    let short = get_env("SLICK_PROMPT_AUTO_SHORT_CONTEXT") == "1";
-    append_context_markers(&mut prompt, short);
-    let path_symbol = if get_env("SLICK_PROMPT_SHORT_PATH") == "1" {
-        "%c"
-    } else {
-        "%~"
-    };
+    append_context_markers(&mut prompt);
+    let path_symbol = current_path_symbol();
     let _ = write!(
         prompt,
         "%F{{{}}}{path_symbol}",
@@ -287,15 +374,10 @@ fn build_full_prompt(
     append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
 
-    let short = get_env("SLICK_PROMPT_AUTO_SHORT_CONTEXT") == "1";
-    append_context_markers(&mut prompt, short);
+    append_context_markers(&mut prompt);
     append_git_user_name(&mut prompt, deserialized);
 
-    let path_symbol = if get_env("SLICK_PROMPT_SHORT_PATH") == "1" {
-        "%c"
-    } else {
-        "%~"
-    };
+    let path_symbol = current_path_symbol();
     let _ = write!(
         prompt,
         "%F{{{}}}{path_symbol} ",
@@ -370,12 +452,37 @@ pub fn display(matches: &ArgMatches) {
 
 #[cfg(test)]
 mod tests {
-    use super::append_branch;
+    use super::{append_branch, compact_path};
+    use std::path::Path;
 
     #[test]
     fn test_append_branch_uses_separate_symbol_color() {
         let mut prompt = String::new();
         append_branch(&mut prompt, "main");
         assert_eq!(prompt, "%F{2} %F{160}main");
+    }
+
+    #[test]
+    fn test_compact_path_for_home_nested_path() {
+        let path = Path::new("/var/home/nbari/projects/rust/slick");
+        let home = Path::new("/var/home/nbari");
+
+        assert_eq!(compact_path(path, Some(home)), "~/p/r/slick");
+    }
+
+    #[test]
+    fn test_compact_path_for_absolute_path_outside_home() {
+        let path = Path::new("/var/home/nbari/projects/rust/slick");
+        let home = Path::new("/tmp/home");
+
+        assert_eq!(compact_path(path, Some(home)), "/v/h/n/p/r/slick");
+    }
+
+    #[test]
+    fn test_compact_path_for_home_root() {
+        let path = Path::new("/var/home/nbari");
+        let home = Path::new("/var/home/nbari");
+
+        assert_eq!(compact_path(path, Some(home)), "~");
     }
 }

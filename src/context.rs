@@ -216,62 +216,57 @@ pub fn collect_context_markers(short: bool) -> Vec<ContextMarker> {
     let mut markers = Vec::with_capacity(5);
 
     if let Some(toolbox_name) = get_toolbox_name() {
-        let text = if short {
-            format!("({})", get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"))
-        } else {
-            format_context_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
-        };
         markers.push(ContextMarker {
             color: get_env("SLICK_PROMPT_TOOLBOX_COLOR").to_string(),
-            text,
+            text: if short {
+                format!("({})", get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"))
+            } else {
+                format_context_marker(get_env("SLICK_PROMPT_TOOLBOX_SYMBOL"), &toolbox_name)
+            },
         });
     }
 
     if let Some(devpod_name) = get_devpod_name() {
-        let text = if short {
-            format!("({})", get_env("SLICK_PROMPT_DEVPOD_SYMBOL"))
-        } else {
-            format_context_marker(get_env("SLICK_PROMPT_DEVPOD_SYMBOL"), &devpod_name)
-        };
         markers.push(ContextMarker {
             color: get_env("SLICK_PROMPT_DEVPOD_COLOR").to_string(),
-            text,
+            text: if short {
+                format!("({})", get_env("SLICK_PROMPT_DEVPOD_SYMBOL"))
+            } else {
+                format_context_marker(get_env("SLICK_PROMPT_DEVPOD_SYMBOL"), &devpod_name)
+            },
         });
     }
 
     if let Some(aws_label) = get_aws_label() {
-        let text = if short {
-            "(aws)".to_string()
-        } else {
-            format_context_marker("", &aws_label)
-        };
         markers.push(ContextMarker {
             color: get_env("SLICK_PROMPT_AWS_COLOR").to_string(),
-            text,
+            text: if short {
+                "(aws)".to_string()
+            } else {
+                format_context_marker("", &aws_label)
+            },
         });
     }
 
     if let Some(k8s_label) = get_k8s_label() {
-        let text = if short {
-            "(k8s)".to_string()
-        } else {
-            format_context_marker("", &k8s_label)
-        };
         markers.push(ContextMarker {
             color: get_env("SLICK_PROMPT_K8S_COLOR").to_string(),
-            text,
+            text: if short {
+                "(k8s)".to_string()
+            } else {
+                format_context_marker("", &k8s_label)
+            },
         });
     }
 
     if let Some((python_env, source)) = get_python_env() {
-        let text = if short {
-            "(py)".to_string()
-        } else {
-            format!("({python_env})")
-        };
         markers.push(ContextMarker {
             color: get_python_env_color(source),
-            text,
+            text: if short {
+                "(py)".to_string()
+            } else {
+                format!("({python_env})")
+            },
         });
     }
 

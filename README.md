@@ -153,9 +153,9 @@ export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=sh
 export SLICK_PROMPT_NON_BREAKING_SPACE=" "     # Non-breaking space character
 export SLICK_PROMPT_CURSOR_SHAPE=4             # Cursor shape sent by slick.zsh; empty disables
 export SLICK_PROMPT_TRANSIENT=1                # Compact previous prompt in scrollback (0=disable)
-export SLICK_PROMPT_SHORT_PATH=0               # Show only the last path component (1=short, 0=full %~)
+export SLICK_PROMPT_SHORT_CONTEXT=0            # Shorten context markers like (aws prod) -> (aws)
+export SLICK_PROMPT_SHORT_PATH=0               # Compact path like ~/p/r/slick (1=short, 0=full %~)
 export SLICK_PROMPT_SHORT_TIMESTAMP=0          # Show only time in transient prompt (1=HH:MM:SS, 0=ISO8601)
-export SLICK_PROMPT_AUTO_SHORT_CONTEXT=0       # Show only symbols for context markers (1=short, 0=full)
 ```
 
 #### Prompt Symbols
@@ -273,6 +273,19 @@ The helper lives at `scripts/preview_prompt.zsh` and uses `print -P` so the prom
 ## Transient Prompt
 
 By default, slick rewrites the prompt you just used into a compact single-line form when you press Enter. The live prompt stays rich while you type; only the scrollback version is compacted. The transient form includes an RFC 3339 timestamp plus the key context markers, path, branch, and prompt symbol while omitting noisier git status details.
+
+Use a shorter timestamp if you prefer:
+
+```bash
+export SLICK_PROMPT_SHORT_TIMESTAMP=1
+```
+
+Examples:
+
+```text
+2026-05-09T21:47:04+02:00 ~/p/r/slick  sandbox $
+21:47:04 ~/p/r/slick  sandbox $
+```
 
 Disable it if you prefer the old behavior:
 
