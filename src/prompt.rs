@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     env,
     fmt::Write as _,
+    fs,
     path::{Component, Path, PathBuf},
     process::exit,
     time::{Duration, SystemTime},
@@ -141,7 +142,10 @@ fn current_path_symbol() -> String {
     }
 
     let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let home_dir = env::var_os("HOME").map(PathBuf::from);
+    let current_dir = fs::canonicalize(&current_dir).unwrap_or(current_dir);
+    let home_dir = env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| fs::canonicalize(&home).unwrap_or(home));
 
     compact_path(&current_dir, home_dir.as_deref())
 }
