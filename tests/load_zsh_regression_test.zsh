@@ -6,9 +6,9 @@ ROOT_DIR=${${(%):-%N}:A:h:h}
 cd "$ROOT_DIR"
 
 if [[ -n "$CARGO_TARGET_DIR" ]]; then
-    SLICK_BINARY="$CARGO_TARGET_DIR/release/slick"
+    SLICK_BINARY="${CARGO_TARGET_DIR:A}/release/slick"
 else
-    SLICK_BINARY="./target/release/slick"
+    SLICK_BINARY="$ROOT_DIR/target/release/slick"
 fi
 
 if [[ ! -x "$SLICK_BINARY" ]]; then
