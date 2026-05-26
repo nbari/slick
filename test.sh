@@ -147,7 +147,7 @@ for field in "${REQUIRED[@]}"; do
         ALL_VALID=false
     fi
 done
-[ "$ALL_VALID" = true ] && pass "All JSON fields present" || true
+if [ "$ALL_VALID" = true ]; then pass "All JSON fields present"; else fail "Missing required JSON fields"; fi
 
 # TEST 8: Detached HEAD
 test_case "Detached HEAD State"

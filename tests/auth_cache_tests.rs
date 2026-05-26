@@ -1,6 +1,9 @@
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::indexing_slicing)]
 
+mod common;
+
+use slick::git;
 use std::fs;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tempfile::TempDir;
@@ -191,4 +194,95 @@ fn test_auth_cache_whitespace_in_status() {
     let content = fs::read_to_string(&cache_path).unwrap();
     let (_, status) = content.split_once(':').unwrap();
     assert_eq!(status.trim(), "1");
+}
+
+// Tests that exercise the real read_auth_status() production function.
+// SLICK_TEST_AUTH_CACHE_DIR redirects the cache directory so each test
+// controls its own isolated cache without touching the real user cache.
+//
+// Because all these tests mutate the same global env var, a mutex serialises
+// them within the test binary — safe without needing an external crate.
+static AUTH_STATUS_TEST_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+fn with_test_cache_dir<F: FnOnce(&std::path::Path)>(f: F) {
+    let _lock = AUTH_STATUS_TEST_MUTEX
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let cache_dir = TempDir::new().unwrap();
+    unsafe { std::env::set_var("SLICK_TEST_AUTH_CACHE_DIR", cache_dir.path()) };
+    f(cache_dir.path());
+    unsafe { std::env::remove_var("SLICK_TEST_AUTH_CACHE_DIR") };
+}
+
+#[test]
+fn test_read_auth_status_no_cache_file() {
+    with_test_cache_dir(|_| {
+        let (_repo_dir, repo) = common::create_test_repo();
+        assert!(
+            !git::read_auth_status(&repo),
+            "no cache file should return false"
+        );
+    });
+}
+
+#[test]
+fn test_read_auth_status_fresh_failure() {
+    with_test_cache_dir(|_| {
+        let (_repo_dir, repo) = common::create_test_repo();
+        let cache_path = git::get_auth_cache_path(&repo).unwrap();
+        fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+        let now = git::unix_timestamp();
+        fs::write(&cache_path, format!("{now}:1")).unwrap();
+        assert!(
+            git::read_auth_status(&repo),
+            "fresh failure cache should return true"
+        );
+    });
+}
+
+#[test]
+fn test_read_auth_status_fresh_success() {
+    with_test_cache_dir(|_| {
+        let (_repo_dir, repo) = common::create_test_repo();
+        let cache_path = git::get_auth_cache_path(&repo).unwrap();
+        fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+        let now = git::unix_timestamp();
+        fs::write(&cache_path, format!("{now}:0")).unwrap();
+        assert!(
+            !git::read_auth_status(&repo),
+            "fresh success cache should return false"
+        );
+    });
+}
+
+#[test]
+fn test_read_auth_status_expired_failure() {
+    with_test_cache_dir(|_| {
+        let (_repo_dir, repo) = common::create_test_repo();
+        let cache_path = git::get_auth_cache_path(&repo).unwrap();
+        fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+        let stale_ts = git::unix_timestamp() - 301;
+        fs::write(&cache_path, format!("{stale_ts}:1")).unwrap();
+        assert!(
+            !git::read_auth_status(&repo),
+            "expired failure cache should return false"
+        );
+    });
+}
+
+#[test]
+fn test_read_auth_status_future_timestamp() {
+    with_test_cache_dir(|_| {
+        let (_repo_dir, repo) = common::create_test_repo();
+        let cache_path = git::get_auth_cache_path(&repo).unwrap();
+        fs::create_dir_all(cache_path.parent().unwrap()).unwrap();
+        // A future timestamp must not panic via u64 underflow (saturating_sub fix).
+        // saturating_sub returns 0, which is < 300, so the status value is read.
+        let future_ts = git::unix_timestamp() + 9999;
+        fs::write(&cache_path, format!("{future_ts}:1")).unwrap();
+        assert!(
+            git::read_auth_status(&repo),
+            "future-timestamp cache is treated as fresh, so failure status should return true"
+        );
+    });
 }

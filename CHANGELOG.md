@@ -1,3 +1,19 @@
+## 0.22.2 (2026-05-26)
+
+### Fixed
+- Fixed unsigned integer underflow in auth cache expiry check: `now - cached_time` is now `now.saturating_sub(cached_time)`, preventing silent cache invalidation on system clock skew or NTP adjustments.
+- Fixed `is_root()` returning `false` for the root user in containers or systems where the user database is unavailable; the check now uses `get_current_uid() == 0` directly.
+- Fixed `SLICK_PROMPT_GIT_FETCH` only recognising `"0"` to disable background fetch; it now also accepts `"false"`, `"no"`, and `"off"`.
+- Fixed Test 7 in `test.sh` silently passing when required JSON fields were missing (spurious `|| true`).
+
+### Changed
+- Extracted shared git test helpers into `tests/common/mod.rs`, removing the duplicated copy between `git_unit_tests.rs` and `git_integration_tests.rs`.
+
+### Added
+- Added tests for all `get_action()` git states: merge, rebase-merge, rebase-apply, cherry-pick, and bisect.
+- Added integration tests that call `read_auth_status()` directly, including coverage for fresh failure, fresh success, expired cache, and future-timestamp (clock skew) scenarios.
+- Documented missing preview script variables `SLICK_PREVIEW_BIN`, `SLICK_PREVIEW_ELAPSED`, and `SLICK_PREVIEW_INTERVAL` in the README.
+
 ## 0.22.1 (2026-05-09)
 
 ### Added

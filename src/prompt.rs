@@ -9,7 +9,7 @@ use std::{
     process::exit,
     time::{Duration, SystemTime},
 };
-use uzers::{get_current_uid, get_user_by_uid};
+use uzers::get_current_uid;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(default)]
@@ -26,7 +26,7 @@ struct Prompt {
 const TRANSIENT_TIMESTAMP_COLOR: &str = "8";
 
 fn is_root() -> bool {
-    get_user_by_uid(get_current_uid()).is_some_and(|user| user.uid() == 0)
+    get_current_uid() == 0
 }
 
 fn is_remote() -> bool {

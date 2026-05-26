@@ -218,7 +218,8 @@ pub fn get_auth_cache_path(repo: &Repository) -> Option<PathBuf> {
         .to_str()?
         .to_string();
 
-    let cache_dir = env::var("XDG_CACHE_HOME")
+    let cache_dir = env::var("SLICK_TEST_AUTH_CACHE_DIR")
+        .or_else(|_| env::var("XDG_CACHE_HOME"))
         .or_else(|_| env::var("HOME").map(|h| format!("{h}/.cache")))
         .ok()?;
 
@@ -253,7 +254,7 @@ pub fn read_auth_status(repo: &Repository) -> bool {
         let now = unix_timestamp();
 
         // Cache valid for 5 minutes
-        if now - cached_time < 300 {
+        if now.saturating_sub(cached_time) < 300 {
             return status.trim() == "1";
         }
     }

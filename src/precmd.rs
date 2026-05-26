@@ -2,8 +2,7 @@ use crate::get_env;
 use crate::git;
 use git2::Repository;
 use std::{
-    env,
-    fs, // Added back std::fs
+    env, fs,
     io::{self, Write},
     thread::sleep,
     time::Duration,
@@ -53,7 +52,10 @@ pub async fn render() {
 
         // Phase 2b: Async git fetch with auth detection and cache update
         // This spawns a tokio task that checks auth status and updates cache
-        let fetch_handle = if get_env("SLICK_PROMPT_GIT_FETCH") == "0" {
+        let fetch_handle = if matches!(
+            get_env("SLICK_PROMPT_GIT_FETCH"),
+            "0" | "false" | "no" | "off"
+        ) {
             None
         } else {
             let cache_path = git::get_auth_cache_path(&repo);

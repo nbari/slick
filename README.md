@@ -148,9 +148,9 @@ export SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2
 #### General Settings
 ```bash
 export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5        # Max command time to display (seconds)
-export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0=no)
+export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0/false/no/off=no)
 export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=show)
-export SLICK_PROMPT_NON_BREAKING_SPACE=" "     # Non-breaking space character
+export SLICK_PROMPT_NON_BREAKING_SPACE=$' ' # Non-breaking space character (default: U+00A0)
 export SLICK_PROMPT_CURSOR_SHAPE=4             # Cursor shape sent by slick.zsh; empty disables
 export SLICK_PROMPT_TRANSIENT=1                # Compact previous prompt in scrollback (0=disable)
 export SLICK_PROMPT_SHORT_CONTEXT=0            # Shorten context markers like (aws prod) -> (aws)
@@ -269,6 +269,14 @@ just preview
 ```
 
 The helper lives at `scripts/preview_prompt.zsh` and uses `print -P` so the prompt colors render as they would in `zsh`. It now shows dedicated AWS profile/region examples and both single-file and multi-file Kubernetes previews.
+
+Additional control variables for the preview script:
+
+| Variable | Default | Description |
+|---|---|---|
+| `SLICK_PREVIEW_BIN` | auto-detected | Path to the `slick` binary to use |
+| `SLICK_PREVIEW_ELAPSED` | `0` | Simulated command elapsed time (seconds) |
+| `SLICK_PREVIEW_INTERVAL` | `1` | Refresh interval in seconds for `preview-watch` |
 
 ## Transient Prompt
 
