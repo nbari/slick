@@ -1,3 +1,12 @@
+## 0.22.3 (2026-06-12)
+
+### Added
+- Added aarch64 (ARM64) Linux release builds on a native ARM runner, producing aarch64 musl binary, RPM, and DEB artifacts.
+
+### Changed
+- Bumped `git2` to 0.21.
+- Updated all package dependencies.
+
 ## 0.22.2 (2026-05-26)
 
 ### Fixed

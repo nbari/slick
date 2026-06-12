@@ -26,6 +26,12 @@ jobs:
           - build: linux
             os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+            rpm_arch: x86_64
+
+          - build: linux-arm
+            os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+            rpm_arch: aarch64
 
     steps:
       - name: Checkout
@@ -49,13 +55,13 @@ jobs:
 
       # Linux-only prerequisites
       - name: Install system deps (musl)
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
           sudo apt-get update -y
           sudo apt-get install -y musl-dev musl-tools
 
       - name: Build zlib for musl
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
           curl -fsSL https://zlib.net/fossils/zlib-1.3.1.tar.gz -o /tmp/zlib-1.3.1.tar.gz
           rm -rf /tmp/zlib-src /tmp/musl-zlib
@@ -67,27 +73,28 @@ jobs:
             make -j"$(nproc)"
             make install
           )
+          TARGET_USCORE="$(echo '${{ matrix.target }}' | tr '-' '_')"
           {
             echo 'PKG_CONFIG_ALLOW_CROSS=1'
             echo 'PKG_CONFIG_PATH=/tmp/musl-zlib/lib/pkgconfig'
-            echo 'CFLAGS_x86_64_unknown_linux_musl=-I/tmp/musl-zlib/include'
+            echo "CFLAGS_${TARGET_USCORE}=-I/tmp/musl-zlib/include"
             echo 'LIBRARY_PATH=/tmp/musl-zlib/lib'
           } >> "$GITHUB_ENV"
 
       - name: Install packaging tools (RPM/DEB)
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
           cargo install cargo-generate-rpm
           cargo install cargo-deb --force --locked
 
       # Build once for Linux (musl)
       - name: Build Linux (musl)
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       # Strip once and prep paths for both packagers
       - name: Strip and prepare packaging paths (Linux)
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
           BIN="target/${{ matrix.target }}/release/${{ steps.package.outputs.name }}"
           ls -al "$BIN"
@@ -98,15 +105,15 @@ jobs:
           ls -al target/release/${{ steps.package.outputs.name }}
 
       - name: Generate RPM
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
-          cargo generate-rpm
+          cargo generate-rpm --arch ${{ matrix.rpm_arch }}
           RPM_PATH="$(find target/generate-rpm -type f -name '*.rpm' -print -quit)"
           echo "RPM_ASSET=$RPM_PATH" >> $GITHUB_ENV
           echo "RPM: $RPM_PATH"
 
       - name: Generate DEB (musl static)
-        if: matrix.build == 'linux'
+        if: contains(matrix.target, 'linux')
         run: |
           cargo deb --no-build
           DEB_PATH="$(find target/debian -maxdepth 1 -type f -name '*.deb' -print -quit)"
@@ -115,7 +122,7 @@ jobs:
 
       # Non-Linux builds (macOS)
       - name: Build
-        if: matrix.build != 'linux'
+        if: ${{ !contains(matrix.target, 'linux') }}
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Build archive
