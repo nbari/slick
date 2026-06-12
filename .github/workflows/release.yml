@@ -115,8 +115,8 @@ jobs:
       - name: Generate DEB (musl static)
         if: contains(matrix.target, 'linux')
         run: |
-          cargo deb --no-build
-          DEB_PATH="$(find target/debian -maxdepth 1 -type f -name '*.deb' -print -quit)"
+          cargo deb --no-build --target ${{ matrix.target }}
+          DEB_PATH="$(find target -type f -name '*.deb' -print -quit)"
           echo "DEB_ASSET=$DEB_PATH" >> $GITHUB_ENV
           echo "DEB: $DEB_PATH"
 
