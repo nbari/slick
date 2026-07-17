@@ -78,7 +78,19 @@ If you already have your own `accept-line`, `zle-line-init`, or `zle-keymap-sele
 
 ### Cursor Shape Notes
 
-`slick` emits a cursor-shape escape from the shell integration when Zsh regains control of the prompt. The default is `SLICK_PROMPT_CURSOR_SHAPE=4`, which selects a steady underline. Set `SLICK_PROMPT_CURSOR_SHAPE` to another supported value, or set it to an empty string to disable cursor-shape output entirely.
+`slick` emits a cursor-shape escape from the shell integration when Zsh regains control of the prompt. The default is `SLICK_PROMPT_CURSOR_SHAPE=dynamic`: `vicmd` and `visual` keymaps use a steady block, while insert-style keymaps use a steady bar. This makes the active editing mode visible and follows Ghostty's shell-integration convention.
+
+With Zsh Vi keybindings and the default prompt symbols, dynamic mode looks like this:
+
+| Action | Zsh keymap | Prompt and cursor | Meaning |
+| --- | --- | --- | --- |
+| Start typing or press `i` | `main` / `viins` | `$` + steady bar `│` | Insert text |
+| Press `Esc` | `vicmd` | `>` + steady block `█` | Navigate or edit the command line |
+| Press `v` from `vicmd` | `visual` | `$` + steady block `█` | Select text |
+
+For example, pressing `Esc` changes `$` to `>` and the bar to a block. Pressing `i` changes both back. On each ZLE keymap change, `slick.zsh` redraws the prompt with the active keymap and Slick emits the matching `DECSCUSR` cursor-shape escape. The prompt-symbol change is configured independently with `SLICK_PROMPT_SYMBOL` and `SLICK_PROMPT_VICMD_SYMBOL`; `dynamic` controls only the terminal cursor shape and does not enable or change Zsh keybindings.
+
+Set `SLICK_PROMPT_CURSOR_SHAPE` to a supported numeric value for a fixed shape, or set it to an empty string to disable cursor-shape output entirely.
 
 If you want to manage it yourself with the `DECSCUSR` escape sequence (`\e[Ps q`), these values are commonly supported:
 
@@ -91,6 +103,32 @@ If you want to manage it yourself with the `DECSCUSR` escape sequence (`\e[Ps q`
 # 5  blinking bar (xterm)
 # 6  steady bar (xterm)
 ```
+
+#### Ghostty and tmux
+
+Let `slick` be the only component that manages the shell-prompt cursor while keeping Ghostty's other shell-integration features enabled:
+
+```ini
+cursor-style = bar
+cursor-style-blink = false
+shell-integration-features = no-cursor
+```
+
+No `SLICK_PROMPT_CURSOR_SHAPE` override is needed for dynamic mode. If cursor shapes do not pass through tmux, ensure the outer Ghostty terminal advertises the `cstyle` feature:
+
+```tmux
+set-option -sa terminal-features ',xterm-ghostty:cstyle'
+```
+
+Fixed shapes remain available for compatibility:
+
+```sh
+export SLICK_PROMPT_CURSOR_SHAPE=4   # previous steady-underline behavior
+export SLICK_PROMPT_CURSOR_SHAPE=6   # always use a steady bar
+export SLICK_PROMPT_CURSOR_SHAPE=''  # let another integration own the cursor
+```
+
+A fixed numeric value keeps that cursor shape in every Zsh keymap. The prompt symbol can still change when entering or leaving `vicmd`.
 
 ## 🔤 Font Setup
 
@@ -151,7 +189,7 @@ export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5        # Max command time to display (se
 export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0/false/no/off=no)
 export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=show)
 export SLICK_PROMPT_NON_BREAKING_SPACE=$' ' # Non-breaking space character (default: U+00A0)
-export SLICK_PROMPT_CURSOR_SHAPE=4             # Cursor shape sent by slick.zsh; empty disables
+export SLICK_PROMPT_CURSOR_SHAPE=dynamic       # Block in command/visual mode, bar otherwise
 export SLICK_PROMPT_TRANSIENT=1                # Compact previous prompt in scrollback (0=disable)
 export SLICK_PROMPT_SHORT_CONTEXT=0            # Shorten context markers like (aws prod) -> (aws)
 export SLICK_PROMPT_SHORT_PATH=0               # Compact path like ~/p/r/slick (1=short, 0=full %~)

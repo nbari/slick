@@ -56,7 +56,8 @@ impl EnvDefaults {
             aws_color: env::var("SLICK_PROMPT_AWS_COLOR").unwrap_or_else(|_| "7".into()),
             cmd_max_exec_time: env::var("SLICK_PROMPT_CMD_MAX_EXEC_TIME")
                 .unwrap_or_else(|_| "5".into()),
-            cursor_shape: env::var("SLICK_PROMPT_CURSOR_SHAPE").unwrap_or_else(|_| "4".into()),
+            cursor_shape: env::var("SLICK_PROMPT_CURSOR_SHAPE")
+                .unwrap_or_else(|_| "dynamic".into()),
             devpod_color: env::var("SLICK_PROMPT_DEVPOD_COLOR").unwrap_or_else(|_| "7".into()),
             devpod_symbol: env::var("SLICK_PROMPT_DEVPOD_SYMBOL").unwrap_or_else(|_| "".into()),
             k8s_color: env::var("SLICK_PROMPT_K8S_COLOR").unwrap_or_else(|_| "7".into()),

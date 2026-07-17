@@ -10,17 +10,47 @@ fn get_slick_binary() -> String {
 }
 
 #[test]
-fn test_default_cursor_shape_is_included() {
+fn test_default_dynamic_cursor_is_bar_in_insert_modes() {
+    for keymap in ["main", "viins", "isearch"] {
+        let output = Command::new(get_slick_binary())
+            .args(["prompt", "-e", "0", "-r", "0", "-k", keymap, "-d", ""])
+            .output()
+            .expect("Failed to execute slick");
+
+        assert!(output.status.success());
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("%{\x1b[6 q%}"), "keymap={keymap:?}");
+    }
+}
+
+#[test]
+fn test_default_dynamic_cursor_is_block_in_command_modes() {
+    for keymap in ["vicmd", "visual"] {
+        let output = Command::new(get_slick_binary())
+            .args(["prompt", "-e", "0", "-r", "0", "-k", keymap, "-d", ""])
+            .output()
+            .expect("Failed to execute slick");
+
+        assert!(output.status.success());
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(stdout.contains("%{\x1b[2 q%}"), "keymap={keymap:?}");
+    }
+}
+
+#[test]
+fn test_explicit_dynamic_cursor_is_supported() {
     let output = Command::new(get_slick_binary())
-        .args(["prompt", "-e", "0", "-r", "0", "-k", "main", "-d", ""])
+        .args(["prompt", "-e", "0", "-r", "0", "-k", "vicmd", "-d", ""])
+        .env("SLICK_PROMPT_CURSOR_SHAPE", "dynamic")
         .output()
         .expect("Failed to execute slick");
 
     assert!(output.status.success());
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    // Default SLICK_PROMPT_CURSOR_SHAPE is 4 (steady underscore)
-    assert!(stdout.contains("%{\x1b[4 q%}"));
+    assert!(stdout.contains("%{\x1b[2 q%}"));
 }
 
 #[test]
@@ -67,25 +97,30 @@ fn test_invalid_cursor_shape_is_ignored() {
 }
 
 #[test]
-fn test_transient_prompt_includes_cursor_shape() {
-    let output = Command::new(get_slick_binary())
-        .args([
-            "prompt",
-            "--transient",
-            "-e",
-            "0",
-            "-r",
-            "0",
-            "-k",
-            "main",
-            "-d",
-            "",
-        ])
-        .output()
-        .expect("Failed to execute slick");
+fn test_transient_prompt_includes_dynamic_cursor_shape() {
+    for (keymap, expected_shape) in [("main", "6"), ("vicmd", "2")] {
+        let output = Command::new(get_slick_binary())
+            .args([
+                "prompt",
+                "--transient",
+                "-e",
+                "0",
+                "-r",
+                "0",
+                "-k",
+                keymap,
+                "-d",
+                "",
+            ])
+            .output()
+            .expect("Failed to execute slick");
 
-    assert!(output.status.success());
+        assert!(output.status.success());
 
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("%{\x1b[4 q%}"));
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains(&format!("%{{\x1b[{expected_shape} q%}}")),
+            "keymap={keymap:?}"
+        );
+    }
 }

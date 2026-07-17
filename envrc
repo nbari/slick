@@ -30,9 +30,10 @@ export SLICK_PROMPT_GIT_FETCH=1
 #export SLICK_PROMPT_TRANSIENT=1
 
 # Cursor shape emitted by slick.zsh via DECSCUSR (\e[Ps q)
-# Default: 4 (steady underline)
+# Default: dynamic (steady block in command/visual mode, steady bar otherwise)
 # Set to an empty string to disable cursor-shape output
 # Supported values:
+#   dynamic follows the active Zsh keymap
 #   0 blinking block
 #   1 blinking block (default terminal behavior)
 #   2 steady block
@@ -40,7 +41,7 @@ export SLICK_PROMPT_GIT_FETCH=1
 #   4 steady underline
 #   5 blinking bar (xterm)
 #   6 steady bar (xterm)
-#export SLICK_PROMPT_CURSOR_SHAPE=4
+#export SLICK_PROMPT_CURSOR_SHAPE=dynamic
 
 # Non-breaking space character
 # Default: \u{a0}

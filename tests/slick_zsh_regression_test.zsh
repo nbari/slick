@@ -73,6 +73,17 @@ typeset -g slick_prompt_data='{"branch":"branch-$(id)-%n-`id`-\\literal"}'
 export SLICK_PROMPT_CURSOR_SHAPE=''
 export SLICK_PROMPT_GIT_BRANCH_SYMBOL=''
 
+# Dynamic cursor rendering must follow the active ZLE keymap before widgets redraw the prompt.
+export SLICK_PROMPT_CURSOR_SHAPE=dynamic
+KEYMAP=main
+DYNAMIC_INSERT_PROMPT=$(slick_prompt_render 0)
+[[ "$DYNAMIC_INSERT_PROMPT" == *$'%{\e[6 q%}'* ]] || die "main keymap should render a steady bar cursor"
+KEYMAP=vicmd
+DYNAMIC_COMMAND_PROMPT=$(slick_prompt_render 0)
+[[ "$DYNAMIC_COMMAND_PROMPT" == *$'%{\e[2 q%}'* ]] || die "vicmd keymap should render a steady block cursor"
+unset KEYMAP
+export SLICK_PROMPT_CURSOR_SHAPE=''
+
 unsetopt promptsubst
 slick_prompt_set_prompt 0
 [[ "${options[promptsubst]}" == off ]] || die "rendering should preserve PROMPT_SUBST-off state"

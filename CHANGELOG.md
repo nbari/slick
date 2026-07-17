@@ -1,3 +1,17 @@
+## 0.24.0 (2026-07-18)
+
+### Added
+- Added `dynamic` cursor mode, using a steady block in the Zsh `vicmd` and `visual` keymaps and a steady bar in insert-style keymaps.
+- Added Ghostty configuration guidance for assigning cursor ownership to `slick`, plus tmux `cstyle` passthrough troubleshooting.
+- Added regression coverage for dynamic insert, command, visual, and transient prompts, fixed-shape overrides, invalid values, and ZLE keymap redraws.
+
+### Changed
+- Changed the default `SLICK_PROMPT_CURSOR_SHAPE` from `4` (steady underline) to `dynamic`.
+- Preserved numeric values `0` through `6` as fixed-shape overrides and the empty value as the cursor-management opt-out.
+
+### Fixed
+- Prevented the default cursor from being clipped at the bottom of zero-padding terminal windows by replacing the underline default with mode-aware block and bar cursors.
+
 ## 0.23.0 (2026-07-17)
 
 ### Security

@@ -116,8 +116,8 @@ fn test_get_env_max_exec_time_is_numeric() {
 fn test_get_env_cursor_shape_is_supported() {
     let val = get_env("SLICK_PROMPT_CURSOR_SHAPE");
     assert!(
-        matches!(val, "0" | "1" | "2" | "3" | "4" | "5" | "6"),
-        "CURSOR_SHAPE should be one of the supported DECSCUSR values"
+        matches!(val, "dynamic" | "0" | "1" | "2" | "3" | "4" | "5" | "6"),
+        "CURSOR_SHAPE should be dynamic or a supported DECSCUSR value"
     );
 }
 

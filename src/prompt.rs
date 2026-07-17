@@ -406,12 +406,28 @@ fn trim_trailing_space(prompt: &mut String) {
     }
 }
 
-fn append_cursor_shape(prompt: &mut String, _keymap: &str) {
-    let cursor_shape = get_env("SLICK_PROMPT_CURSOR_SHAPE");
-
-    if !cursor_shape.is_empty() && (0..=6).contains(&cursor_shape.parse::<u8>().unwrap_or(255)) {
-        let _ = write!(prompt, "%{{\x1b[{cursor_shape} q%}}");
+fn resolve_cursor_shape(configured_shape: &str, keymap: &str) -> Option<u8> {
+    if configured_shape == "dynamic" {
+        return Some(if matches!(keymap, "vicmd" | "visual") {
+            2
+        } else {
+            6
+        });
     }
+
+    configured_shape
+        .parse::<u8>()
+        .ok()
+        .filter(|cursor_shape| *cursor_shape <= 6)
+}
+
+fn append_cursor_shape(prompt: &mut String, keymap: &str) {
+    let Some(cursor_shape) = resolve_cursor_shape(get_env("SLICK_PROMPT_CURSOR_SHAPE"), keymap)
+    else {
+        return;
+    };
+
+    let _ = write!(prompt, "%{{\x1b[{cursor_shape} q%}}");
 }
 
 fn build_transient_prompt(
