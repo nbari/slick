@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 # Development/testing wrapper for slick prompt
 
 0=${(%):-%N}

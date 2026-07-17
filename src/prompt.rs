@@ -24,6 +24,19 @@ struct Prompt {
 }
 
 const TRANSIENT_TIMESTAMP_COLOR: &str = "8";
+const INTERNAL_DOLLAR_PSVAR_ENV: &str = "_SLICK_PROMPT_PSVAR_DOLLAR";
+const INTERNAL_BACKTICK_PSVAR_ENV: &str = "_SLICK_PROMPT_PSVAR_BACKTICK";
+const INTERNAL_BACKSLASH_PSVAR_ENV: &str = "_SLICK_PROMPT_PSVAR_BACKSLASH";
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PromptLiteralEncoding {
+    Backslash,
+    Psvar {
+        dollar: usize,
+        backtick: usize,
+        backslash: usize,
+    },
+}
 
 fn is_root() -> bool {
     get_current_uid() == 0
@@ -50,18 +63,79 @@ fn append_identity_prefix(prompt: &mut String, is_root_user: bool, is_remote_use
     }
 }
 
-fn append_context_markers(prompt: &mut String) {
+fn append_context_markers(prompt: &mut String, encoding: PromptLiteralEncoding) {
     let short = get_env("SLICK_PROMPT_SHORT_CONTEXT") == "1";
     for marker in collect_context_markers(short) {
-        let _ = write!(prompt, "%F{{{}}}{} ", marker.color, marker.text);
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            marker.color,
+            escape_prompt_literal(&marker.text, encoding)
+        );
     }
 }
 
-fn escape_prompt_literal(segment: &str) -> String {
-    segment.replace('%', "%%")
+fn parse_psvar_index(value: &str) -> Option<usize> {
+    value.parse::<usize>().ok().filter(|index| *index > 0)
 }
 
-fn compact_path_segments<'a>(segments: impl Iterator<Item = &'a str>) -> String {
+fn prompt_literal_encoding(dollar: &str, backtick: &str, backslash: &str) -> PromptLiteralEncoding {
+    match (
+        parse_psvar_index(dollar),
+        parse_psvar_index(backtick),
+        parse_psvar_index(backslash),
+    ) {
+        (Some(dollar), Some(backtick), Some(backslash)) => PromptLiteralEncoding::Psvar {
+            dollar,
+            backtick,
+            backslash,
+        },
+        _ => PromptLiteralEncoding::Backslash,
+    }
+}
+
+fn current_prompt_literal_encoding() -> PromptLiteralEncoding {
+    prompt_literal_encoding(
+        &get_env_var(INTERNAL_DOLLAR_PSVAR_ENV),
+        &get_env_var(INTERNAL_BACKTICK_PSVAR_ENV),
+        &get_env_var(INTERNAL_BACKSLASH_PSVAR_ENV),
+    )
+}
+
+fn escape_prompt_literal(segment: &str, encoding: PromptLiteralEncoding) -> String {
+    let mut escaped = String::with_capacity(segment.len());
+    for character in segment.chars() {
+        match character {
+            '%' => escaped.push_str("%%"),
+            '\\' | '$' | '`' if encoding == PromptLiteralEncoding::Backslash => {
+                escaped.push('\\');
+                escaped.push(character);
+            }
+            '$' => {
+                if let PromptLiteralEncoding::Psvar { dollar, .. } = encoding {
+                    let _ = write!(escaped, "%{dollar}v");
+                }
+            }
+            '`' => {
+                if let PromptLiteralEncoding::Psvar { backtick, .. } = encoding {
+                    let _ = write!(escaped, "%{backtick}v");
+                }
+            }
+            '\\' => {
+                if let PromptLiteralEncoding::Psvar { backslash, .. } = encoding {
+                    let _ = write!(escaped, "%{backslash}v");
+                }
+            }
+            _ => escaped.push(character),
+        }
+    }
+    escaped
+}
+
+fn compact_path_segments<'a>(
+    segments: impl Iterator<Item = &'a str>,
+    encoding: PromptLiteralEncoding,
+) -> String {
     let parts: Vec<&str> = segments.collect();
     if parts.is_empty() {
         return String::new();
@@ -74,16 +148,16 @@ fn compact_path_segments<'a>(segments: impl Iterator<Item = &'a str>) -> String 
         }
 
         if index + 1 == parts.len() {
-            compacted.push_str(&escape_prompt_literal(part));
+            compacted.push_str(&escape_prompt_literal(part, encoding));
         } else if let Some(ch) = part.chars().next() {
-            compacted.push(ch);
+            compacted.push_str(&escape_prompt_literal(&ch.to_string(), encoding));
         }
     }
 
     compacted
 }
 
-fn compact_path(path: &Path, home: Option<&Path>) -> String {
+fn compact_path(path: &Path, home: Option<&Path>, encoding: PromptLiteralEncoding) -> String {
     if let Some(home) = home
         && let Ok(relative) = path.strip_prefix(home)
     {
@@ -92,6 +166,7 @@ fn compact_path(path: &Path, home: Option<&Path>) -> String {
                 .iter()
                 .filter_map(|segment| segment.to_str())
                 .filter(|segment| !segment.is_empty()),
+            encoding,
         );
 
         return if rendered.is_empty() {
@@ -120,7 +195,7 @@ fn compact_path(path: &Path, home: Option<&Path>) -> String {
         }
     }
 
-    let rendered = compact_path_segments(segments.into_iter());
+    let rendered = compact_path_segments(segments.into_iter(), encoding);
     if rendered.is_empty() {
         if prefix.is_empty() {
             ".".to_string()
@@ -136,7 +211,7 @@ fn compact_path(path: &Path, home: Option<&Path>) -> String {
     }
 }
 
-fn current_path_symbol() -> String {
+fn current_path_symbol(encoding: PromptLiteralEncoding) -> String {
     if get_env("SLICK_PROMPT_SHORT_PATH") != "1" {
         return "%~".to_string();
     }
@@ -147,10 +222,10 @@ fn current_path_symbol() -> String {
         .map(PathBuf::from)
         .map(|home| fs::canonicalize(&home).unwrap_or(home));
 
-    compact_path(&current_dir, home_dir.as_deref())
+    compact_path(&current_dir, home_dir.as_deref(), encoding)
 }
 
-fn append_branch(prompt: &mut String, branch: &str) {
+fn append_branch(prompt: &mut String, branch: &str, encoding: PromptLiteralEncoding) {
     if branch.is_empty() {
         return;
     }
@@ -171,7 +246,11 @@ fn append_branch(prompt: &mut String, branch: &str) {
         );
     }
 
-    let _ = write!(prompt, "%F{{{branch_color}}}{branch}");
+    let _ = write!(
+        prompt,
+        "%F{{{branch_color}}}{}",
+        escape_prompt_literal(branch, encoding)
+    );
 }
 
 fn prompt_symbol(keymap: &str, last_return_code: &str, is_root_user: bool) -> (String, String) {
@@ -184,7 +263,7 @@ fn prompt_symbol(keymap: &str, last_return_code: &str, is_root_user: bool) -> (S
         get_env("SLICK_PROMPT_SYMBOL")
     };
 
-    let color = if symbol == vicmd_symbol {
+    let color = if keymap == "vicmd" {
         get_env("SLICK_PROMPT_VICMD_COLOR")
     } else if last_return_code == "0" {
         get_env("SLICK_PROMPT_SYMBOL_COLOR")
@@ -219,30 +298,46 @@ fn parse_time_elapsed(matches: &ArgMatches) -> u64 {
     matches.get_one::<String>("elapsed").map_or_else(
         || elapsed_from_timestamp(matches),
         |elapsed| {
-            elapsed.parse::<i64>().ok().map_or(
-                0,
-                |value| {
-                    if value < 0 { 0 } else { value.cast_unsigned() }
-                },
-            )
+            elapsed
+                .parse::<i64>()
+                .ok()
+                .and_then(|value| u64::try_from(value).ok())
+                .unwrap_or(0)
         },
     )
 }
 
-fn append_git_user_name(prompt: &mut String, deserialized: &Prompt) {
-    if get_env_var("SLICK_PROMPT_NO_GIT_UNAME").is_empty() && !deserialized.u_name.is_empty() {
+/// `1`, `true`, `yes`, and `on` hide the name; every other value safely leaves it visible.
+fn git_user_name_is_hidden(value: &str) -> bool {
+    ["1", "true", "yes", "on"]
+        .iter()
+        .any(|enabled| value.eq_ignore_ascii_case(enabled))
+}
+
+fn append_git_user_name(
+    prompt: &mut String,
+    deserialized: &Prompt,
+    encoding: PromptLiteralEncoding,
+) {
+    if !git_user_name_is_hidden(&get_env_var("SLICK_PROMPT_NO_GIT_UNAME"))
+        && !deserialized.u_name.is_empty()
+    {
         let _ = write!(
             prompt,
             "%F{{{}}}{} ",
             get_env("SLICK_PROMPT_GIT_UNAME_COLOR"),
-            deserialized.u_name
+            escape_prompt_literal(&deserialized.u_name, encoding)
         );
     }
 }
 
-fn append_git_metadata(prompt: &mut String, deserialized: &Prompt) {
+fn append_git_metadata(
+    prompt: &mut String,
+    deserialized: &Prompt,
+    encoding: PromptLiteralEncoding,
+) {
     if !deserialized.branch.is_empty() {
-        append_branch(prompt, &deserialized.branch);
+        append_branch(prompt, &deserialized.branch, encoding);
         prompt.push(' ');
     }
 
@@ -329,6 +424,7 @@ fn build_transient_prompt(
     keymap: &str,
 ) -> String {
     let mut prompt = String::with_capacity(256);
+    let encoding = current_prompt_literal_encoding();
 
     append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
@@ -340,8 +436,8 @@ fn build_transient_prompt(
         );
     }
 
-    append_context_markers(&mut prompt);
-    let path_symbol = current_path_symbol();
+    append_context_markers(&mut prompt, encoding);
+    let path_symbol = current_path_symbol(encoding);
     let _ = write!(
         prompt,
         "%F{{{}}}{path_symbol}",
@@ -350,7 +446,7 @@ fn build_transient_prompt(
 
     if !deserialized.branch.is_empty() {
         prompt.push(' ');
-        append_branch(&mut prompt, &deserialized.branch);
+        append_branch(&mut prompt, &deserialized.branch, encoding);
     }
 
     let _ = write!(
@@ -374,21 +470,22 @@ fn build_full_prompt(
     keymap: &str,
 ) -> String {
     let mut prompt = String::with_capacity(256);
+    let encoding = current_prompt_literal_encoding();
 
     append_cursor_shape(&mut prompt, keymap);
     append_identity_prefix(&mut prompt, is_root_user, is_remote_user);
 
-    append_context_markers(&mut prompt);
-    append_git_user_name(&mut prompt, deserialized);
+    append_context_markers(&mut prompt, encoding);
+    append_git_user_name(&mut prompt, deserialized, encoding);
 
-    let path_symbol = current_path_symbol();
+    let path_symbol = current_path_symbol(encoding);
     let _ = write!(
         prompt,
         "%F{{{}}}{path_symbol} ",
         get_env("SLICK_PROMPT_PATH_COLOR")
     );
 
-    append_git_metadata(&mut prompt, deserialized);
+    append_git_metadata(&mut prompt, deserialized, encoding);
     append_elapsed(&mut prompt, time_elapsed);
     trim_trailing_space(&mut prompt);
 
@@ -456,13 +553,118 @@ pub fn display(matches: &ArgMatches) {
 
 #[cfg(test)]
 mod tests {
-    use super::{append_branch, compact_path};
+    use super::{
+        PromptLiteralEncoding, append_branch, compact_path, compact_path_segments,
+        escape_prompt_literal, git_user_name_is_hidden, prompt_literal_encoding,
+    };
     use std::path::Path;
+
+    #[test]
+    fn test_escape_prompt_literal() {
+        let psvar = PromptLiteralEncoding::Psvar {
+            dollar: 11,
+            backtick: 12,
+            backslash: 13,
+        };
+        let cases = [
+            ("plain text", "plain text", "plain text"),
+            ("%n", "%%n", "%%n"),
+            ("$(id)", r"\$(id)", "%11v(id)"),
+            ("`id`", r"\`id\`", "%12vid%12v"),
+            (r"\$(id)", r"\\\$(id)", "%13v%11v(id)"),
+            (
+                r"before %n $(id) `id` \ after",
+                r"before %%n \$(id) \`id\` \\ after",
+                r"before %%n %11v(id) %12vid%12v %13v after",
+            ),
+        ];
+
+        for (input, direct, canonical) in cases {
+            assert_eq!(
+                escape_prompt_literal(input, PromptLiteralEncoding::Backslash),
+                direct,
+                "direct caller, input: {input:?}"
+            );
+            assert_eq!(
+                escape_prompt_literal(input, psvar),
+                canonical,
+                "canonical loader, input: {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_prompt_literal_encoding_defaults_safely() {
+        let cases = [
+            ("", "", "", PromptLiteralEncoding::Backslash),
+            ("1", "2", "", PromptLiteralEncoding::Backslash),
+            ("1", "invalid", "3", PromptLiteralEncoding::Backslash),
+            (
+                "11",
+                "12",
+                "13",
+                PromptLiteralEncoding::Psvar {
+                    dollar: 11,
+                    backtick: 12,
+                    backslash: 13,
+                },
+            ),
+        ];
+
+        for (dollar, backtick, backslash, expected) in cases {
+            assert_eq!(
+                prompt_literal_encoding(dollar, backtick, backslash),
+                expected,
+                "values: {dollar:?}, {backtick:?}, {backslash:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_compact_path_segments_escape_prompt_syntax() {
+        let psvar = PromptLiteralEncoding::Psvar {
+            dollar: 11,
+            backtick: 12,
+            backslash: 13,
+        };
+        assert_eq!(
+            compact_path_segments(
+                ["%parent", r"$(id)%n`id`\"].into_iter(),
+                PromptLiteralEncoding::Backslash,
+            ),
+            r"%%/\$(id)%%n\`id\`\\"
+        );
+        assert_eq!(
+            compact_path_segments(["%parent", r"$(id)%n`id`\"].into_iter(), psvar),
+            r"%%/%11v(id)%%n%12vid%12v%13v"
+        );
+    }
+
+    #[test]
+    fn test_git_user_name_hidden_boolean_values() {
+        let cases = [
+            ("1", true),
+            ("true", true),
+            ("TRUE", true),
+            ("YeS", true),
+            ("oN", true),
+            ("0", false),
+            ("false", false),
+            ("NO", false),
+            ("Off", false),
+            ("", false),
+            ("invalid", false),
+        ];
+
+        for (value, expected) in cases {
+            assert_eq!(git_user_name_is_hidden(value), expected, "value: {value:?}");
+        }
+    }
 
     #[test]
     fn test_append_branch_uses_separate_symbol_color() {
         let mut prompt = String::new();
-        append_branch(&mut prompt, "main");
+        append_branch(&mut prompt, "main", PromptLiteralEncoding::Backslash);
         assert_eq!(prompt, "%F{2} %F{160}main");
     }
 
@@ -471,7 +673,10 @@ mod tests {
         let path = Path::new("/var/home/nbari/projects/rust/slick");
         let home = Path::new("/var/home/nbari");
 
-        assert_eq!(compact_path(path, Some(home)), "~/p/r/slick");
+        assert_eq!(
+            compact_path(path, Some(home), PromptLiteralEncoding::Backslash),
+            "~/p/r/slick"
+        );
     }
 
     #[test]
@@ -479,7 +684,10 @@ mod tests {
         let path = Path::new("/var/home/nbari/projects/rust/slick");
         let home = Path::new("/tmp/home");
 
-        assert_eq!(compact_path(path, Some(home)), "/v/h/n/p/r/slick");
+        assert_eq!(
+            compact_path(path, Some(home), PromptLiteralEncoding::Backslash),
+            "/v/h/n/p/r/slick"
+        );
     }
 
     #[test]
@@ -487,6 +695,9 @@ mod tests {
         let path = Path::new("/var/home/nbari");
         let home = Path::new("/var/home/nbari");
 
-        assert_eq!(compact_path(path, Some(home)), "~");
+        assert_eq!(
+            compact_path(path, Some(home), PromptLiteralEncoding::Backslash),
+            "~"
+        );
     }
 }

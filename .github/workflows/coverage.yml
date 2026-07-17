@@ -12,10 +12,13 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
+
+      - name: Install Zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
 
       - name: Run tests
         run: cargo test --verbose -- --nocapture
@@ -34,7 +37,7 @@ jobs:
           --ignore '../**' --ignore '/*' -o coverage.lcov
 
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:

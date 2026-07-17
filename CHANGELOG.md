@@ -1,3 +1,28 @@
+## 0.23.0 (2026-07-17)
+
+### Security
+- Prevented repository-derived branch, user, path, and context text from executing Zsh prompt substitutions, including when `PROMPT_SUBST` changes after a prompt is stored.
+- Ensured timed-out Git fetches terminate and reap their full process group instead of leaving helper processes running.
+
+### Added
+- Added regression coverage for prompt-literal safety, asynchronous exit-status preservation, fetch cleanup, unborn repositories, deterministic Git status output, rename variants, dependency policy, and CI wiring.
+
+### Changed
+- Updated package dependencies, including Tokio 1.53.0.
+- Kept `git2` local-only with vendored libgit2 and no OpenSSL dependency.
+- Made Zsh script shebangs resolve the shell through `PATH` for portable invocation.
+- Made Git status output deterministic with conflicts and combined states first, followed by modified, deleted, renamed, type-changed, added, and untracked entries.
+- Expanded shell regression coverage in CI and made musl zlib downloads consistent and retryable.
+- Updated GitHub Actions to their latest stable major releases.
+
+### Fixed
+- Preserved the previous command exit status through asynchronous redraws, keymap changes, line initialization, and transient prompts.
+- Correctly reported symbolic branch names and staged files in repositories with no commits.
+- Detected staged, modified, worktree, and nested-directory renames without misclassifying unrelated additions and deletions.
+- Corrected case-insensitive `SLICK_PROMPT_NO_GIT_UNAME` boolean handling.
+- Selected prompt-symbol colors from the active keymap even when configured symbols are identical.
+- Preserved prompt literals when other hooks replace `psvar` and when Zsh uses `KSH_ARRAYS`.
+
 ## 0.22.3 (2026-06-12)
 
 ### Added

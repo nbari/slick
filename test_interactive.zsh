@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 # Test script to verify non-blocking prompt behavior
 #
 # Usage:

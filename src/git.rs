@@ -1,9 +1,8 @@
 // src/git.rs
 use crate::get_env; // Assuming get_env is in lib.rs or another common module
-use git2::{DiffOptions, Error, ObjectType, Repository, StatusOptions, StatusShow};
+use git2::{DiffOptions, Error, ErrorCode, Repository, Status, StatusOptions, StatusShow};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashMap,
     env,
     fmt::Write as _,
     fs,
@@ -34,6 +33,51 @@ pub const ACTION_CHERRY_SEQ: &str = "cherry-seq";
 pub const ACTION_CHERRY: &str = "cherry";
 pub const ACTION_CHERRY_OR_REVERT: &str = "cherry-or-revert";
 pub const NO_BRANCH: &str = "(no branch)";
+
+#[derive(Default)]
+struct StatusCounts {
+    conflicted: u32,
+    added_modified: u32,
+    modified_modified: u32,
+    modified: u32,
+    deleted: u32,
+    renamed: u32,
+    typechanged: u32,
+    added: u32,
+    untracked: u32,
+    ignored: u32,
+    fallback: u32,
+}
+
+impl StatusCounts {
+    const fn increment(&mut self, status: Status) {
+        if status.contains(Status::CONFLICTED) {
+            self.conflicted += 1;
+        } else if status.contains(Status::INDEX_RENAMED) || status.contains(Status::WT_RENAMED) {
+            self.renamed += 1;
+        } else if status.contains(Status::INDEX_NEW) && status.contains(Status::WT_MODIFIED) {
+            self.added_modified += 1;
+        } else if status.contains(Status::INDEX_MODIFIED) && status.contains(Status::WT_MODIFIED) {
+            self.modified_modified += 1;
+        } else if status.contains(Status::INDEX_MODIFIED) || status.contains(Status::WT_MODIFIED) {
+            self.modified += 1;
+        } else if status.contains(Status::INDEX_DELETED) || status.contains(Status::WT_DELETED) {
+            self.deleted += 1;
+        } else if status.contains(Status::INDEX_TYPECHANGE)
+            || status.contains(Status::WT_TYPECHANGE)
+        {
+            self.typechanged += 1;
+        } else if status.contains(Status::INDEX_NEW) {
+            self.added += 1;
+        } else if status.contains(Status::WT_NEW) {
+            self.untracked += 1;
+        } else if status.contains(Status::IGNORED) {
+            self.ignored += 1;
+        } else {
+            self.fallback += 1;
+        }
+    }
+}
 
 /// Represents the collected Git information for rendering the prompt.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
@@ -76,14 +120,28 @@ pub struct Prompt {
 /// A `Prompt` struct populated with available fast Git information.
 #[must_use]
 pub fn build_prompt_fast(repo: &Repository) -> Prompt {
-    let mut prompt = Prompt::default();
-
     // get branch (instant - just reading HEAD)
-    if let Ok(head) = repo.head() {
-        prompt.branch = head.shorthand().unwrap_or(NO_BRANCH).to_string();
-    } else {
-        prompt.branch = NO_BRANCH.into();
-    }
+    let branch = match repo.head() {
+        Ok(head) => head
+            .shorthand()
+            .map_or_else(|_| NO_BRANCH.to_owned(), str::to_owned),
+        Err(error) if error.code() == ErrorCode::UnbornBranch => repo
+            .find_reference("HEAD")
+            .ok()
+            .and_then(|head| {
+                head.symbolic_target()
+                    .ok()
+                    .flatten()
+                    .and_then(|target| target.strip_prefix("refs/heads/"))
+                    .map(str::to_owned)
+            })
+            .unwrap_or_else(|| NO_BRANCH.to_owned()),
+        Err(_) => NO_BRANCH.to_owned(),
+    };
+    let mut prompt = Prompt {
+        branch,
+        ..Prompt::default()
+    };
 
     // get user.name (fast - just reading git config)
     if let Ok(config) = repo.config() {
@@ -135,60 +193,35 @@ pub fn get_status(repo: &Repository) -> Result<String, Error> {
     status_opt
         .show(StatusShow::IndexAndWorkdir)
         .include_untracked(true)
+        .recurse_untracked_dirs(true)
         .include_unmodified(false)
+        .renames_head_to_index(true)
+        .renames_index_to_workdir(true)
         .no_refresh(false); // Keep false to get real-time status
 
     let statuses = repo.statuses(Some(&mut status_opt))?;
     if !statuses.is_empty() {
-        // Use HashMap for O(1) operations instead of BTreeMap's O(log n)
-        let mut map: HashMap<&str, u32> = HashMap::new();
+        let mut counts = StatusCounts::default();
         for entry in statuses.iter() {
-            // println!("{:#?}, {:#?}", entry.path(), entry.status());
-            let status = match entry.status() {
-                s if s.contains(git2::Status::INDEX_NEW)
-                    && s.contains(git2::Status::WT_MODIFIED) =>
-                {
-                    "AM"
-                }
-                s if s.contains(git2::Status::INDEX_MODIFIED)
-                    && s.contains(git2::Status::WT_MODIFIED) =>
-                {
-                    "MM"
-                }
-                s if s.contains(git2::Status::INDEX_MODIFIED)
-                    || s.contains(git2::Status::WT_MODIFIED) =>
-                {
-                    "M"
-                }
-                s if s.contains(git2::Status::INDEX_DELETED)
-                    || s.contains(git2::Status::WT_DELETED) =>
-                {
-                    "D"
-                }
-                s if s.contains(git2::Status::INDEX_RENAMED)
-                    || s.contains(git2::Status::WT_RENAMED) =>
-                {
-                    "R"
-                }
-                s if s.contains(git2::Status::INDEX_TYPECHANGE)
-                    || s.contains(git2::Status::WT_TYPECHANGE) =>
-                {
-                    "T"
-                }
-                s if s.contains(git2::Status::INDEX_NEW) => "A",
-                s if s.contains(git2::Status::WT_NEW) => "??",
-                s if s.contains(git2::Status::CONFLICTED) => "UU",
-                s if s.contains(git2::Status::IGNORED) => "!",
-                _ => "X",
-            };
-
-            *map.entry(status).or_insert(0) += 1;
+            counts.increment(entry.status());
         }
-        for (k, v) in &map {
-            let mut s = String::with_capacity(8);
-            // Writing to String never fails - ignore result
-            let _ = write!(s, "{k} {v}");
-            status.push(s);
+
+        for (label, count) in [
+            ("UU", counts.conflicted),
+            ("AM", counts.added_modified),
+            ("MM", counts.modified_modified),
+            ("M", counts.modified),
+            ("D", counts.deleted),
+            ("R", counts.renamed),
+            ("T", counts.typechanged),
+            ("A", counts.added),
+            ("??", counts.untracked),
+            ("!", counts.ignored),
+            ("X", counts.fallback),
+        ] {
+            if count > 0 {
+                status.push(format!("{label} {count}"));
+            }
         }
     }
     Ok(status.join(" "))
@@ -367,9 +400,12 @@ pub fn is_ahead_behind_remote(repo: &Repository) -> (usize, usize) {
 /// This function will return a `git2::Error` if it fails to get the repository head or diff.
 pub fn is_staged(repo: &Repository) -> Result<bool, Error> {
     let mut opts = DiffOptions::new();
-    let obj = repo.head()?;
-    let tree = obj.peel(ObjectType::Tree)?;
-    let diff = repo.diff_tree_to_index(tree.as_tree(), None, Some(&mut opts))?;
+    let tree = match repo.head() {
+        Ok(head) => Some(head.peel_to_tree()?),
+        Err(error) if error.code() == ErrorCode::UnbornBranch => None,
+        Err(error) => return Err(error),
+    };
+    let diff = repo.diff_tree_to_index(tree.as_ref(), None, Some(&mut opts))?;
     let stats = diff.stats()?;
     if stats.files_changed() > 0 || stats.insertions() > 0 || stats.deletions() > 0 {
         return Ok(true);

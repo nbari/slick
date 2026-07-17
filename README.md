@@ -18,7 +18,7 @@ To install cargo:
 
 If in Linux you may need install this:
 
-    apt install -y build-essential libssl-dev pkg-config
+    apt install -y build-essential pkg-config
 
 check your PATH `$HOME/.cargo/bin/slick`
 

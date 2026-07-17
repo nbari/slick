@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env zsh
 # Canonical sourceable loader for slick prompt
 
 if [[ ! -o interactive ]]; then
@@ -51,6 +51,37 @@ typeset -g slick_prompt_data
 typeset -g slick_prompt_fd
 typeset -g slick_prompt_timestamp
 typeset -g slick_prompt_elapsed
+typeset -gi slick_prompt_exit_status=${slick_prompt_exit_status:-0}
+typeset -gi slick_prompt_dollar_psvar_index=${slick_prompt_dollar_psvar_index:-0}
+typeset -gi slick_prompt_backtick_psvar_index=${slick_prompt_backtick_psvar_index:-0}
+typeset -gi slick_prompt_backslash_psvar_index=${slick_prompt_backslash_psvar_index:-0}
+
+# %Nv inserts psvar values after PROMPT_SUBST, so stored prompts stay safe across option changes.
+function slick_prompt_literal_psvars_valid {
+    emulate -L zsh
+
+    (( slick_prompt_dollar_psvar_index >= 1 &&
+       slick_prompt_backtick_psvar_index >= 1 &&
+       slick_prompt_backslash_psvar_index >= 1 )) &&
+        [[ "${psvar[$slick_prompt_dollar_psvar_index]-}" == '$' &&
+           "${psvar[$slick_prompt_backtick_psvar_index]-}" == '`' &&
+           "${psvar[$slick_prompt_backslash_psvar_index]-}" == '\' ]]
+}
+
+function slick_prompt_install_literal_psvars {
+    emulate -L zsh
+
+    if slick_prompt_literal_psvars_valid; then
+        return
+    fi
+
+    psvar+=('$' '`' '\')
+    slick_prompt_dollar_psvar_index=$(( ${#psvar} - 2 ))
+    slick_prompt_backtick_psvar_index=$(( ${#psvar} - 1 ))
+    slick_prompt_backslash_psvar_index=${#psvar}
+}
+
+slick_prompt_install_literal_psvars
 
 function slick_prompt_transient_enabled {
     [[ "${SLICK_PROMPT_TRANSIENT:-1}" != "0" ]]
@@ -69,6 +100,8 @@ function slick_prompt_rfc3339_timestamp {
 }
 
 function slick_prompt_render {
+    emulate -L zsh
+
     local exit_status=${1:-0}
     local transient=${2:-0}
     local transient_timestamp=${3:-}
@@ -93,18 +126,25 @@ function slick_prompt_render {
         fi
     fi
 
-    "${args[@]}"
+    _SLICK_PROMPT_PSVAR_DOLLAR="$slick_prompt_dollar_psvar_index" \
+    _SLICK_PROMPT_PSVAR_BACKTICK="$slick_prompt_backtick_psvar_index" \
+    _SLICK_PROMPT_PSVAR_BACKSLASH="$slick_prompt_backslash_psvar_index" \
+        "${args[@]}"
+}
+
+function slick_prompt_set_prompt {
+    slick_prompt_install_literal_psvars
+    PROMPT=$(slick_prompt_render "$@")
 }
 
 function slick_prompt_refresh {
-    local exit_status=$?
     local line
 
     # Read ONE line per callback (non-blocking!)
     # ZSH will call this function again if there's more data
     if read -r -u $1 line; then
         slick_prompt_data="$line"
-        PROMPT=$(slick_prompt_render "$exit_status")
+        slick_prompt_set_prompt "$slick_prompt_exit_status"
         zle && zle reset-prompt
         return  # RETURN immediately - don't block! Handler will be called again for next line
     fi
@@ -123,30 +163,39 @@ function slick_prompt_refresh {
 }
 
 function slick_prompt_zle_line_init {
-    PROMPT=$(slick_prompt_render 0)
+    slick_prompt_set_prompt "$slick_prompt_exit_status"
     zle && zle reset-prompt
 
     if [[ -n ${widgets[slick_prompt_original_zle_line_init]-} ]]; then
         zle slick_prompt_original_zle_line_init
+        if ! slick_prompt_literal_psvars_valid; then
+            slick_prompt_set_prompt "$slick_prompt_exit_status"
+            zle && zle reset-prompt
+        fi
     fi
 }
 
 function slick_prompt_zle_keymap_select {
-    PROMPT=$(slick_prompt_render 0)
+    slick_prompt_set_prompt "$slick_prompt_exit_status"
     zle && zle reset-prompt
 
     if [[ -n ${widgets[slick_prompt_original_zle_keymap_select]-} ]]; then
         zle slick_prompt_original_zle_keymap_select
+        if ! slick_prompt_literal_psvars_valid; then
+            slick_prompt_set_prompt "$slick_prompt_exit_status"
+            zle && zle reset-prompt
+        fi
     fi
 }
 
 function slick_prompt_accept_line {
-    local exit_status=$?
+    local transient=0
     local transient_timestamp
 
     if slick_prompt_transient_enabled; then
+        transient=1
         transient_timestamp=$(slick_prompt_rfc3339_timestamp)
-        PROMPT=$(slick_prompt_render "$exit_status" 1 "$transient_timestamp")
+        slick_prompt_set_prompt "$slick_prompt_exit_status" 1 "$transient_timestamp"
         zle reset-prompt
     fi
 
@@ -155,9 +204,14 @@ function slick_prompt_accept_line {
     else
         zle .accept-line
     fi
+
+    if ! slick_prompt_literal_psvars_valid; then
+        slick_prompt_set_prompt "$slick_prompt_exit_status" "$transient" "$transient_timestamp"
+    fi
 }
 
 function slick_prompt_precmd() {
+    slick_prompt_exit_status=$?
     slick_prompt_data=""
 
     # Clean up any lingering fd from previous prompt

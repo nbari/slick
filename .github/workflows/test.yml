@@ -13,7 +13,7 @@ jobs:
     name: Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
@@ -25,7 +25,7 @@ jobs:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Clippy
@@ -36,11 +36,29 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Check
         run: cargo check
+
+  shell:
+    name: Shell integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install shell test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq zsh
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Test shell integration
+        run: ./test.sh
 
   test:
     name: Test
@@ -48,7 +66,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macOS-latest
+          - macos-15
+          - macos-15-intel
         rust:
           - stable
     runs-on: ${{ matrix.os }}
@@ -57,8 +76,22 @@ jobs:
       - lint
       - check
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Zsh
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zsh
 
       - name: test
         run: cargo test
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Test Zsh loaders
+        run: |
+          zsh -dfi -c "source tests/slick_zsh_regression_test.zsh"
+          zsh -dfi -c "source tests/load_zsh_regression_test.zsh"
