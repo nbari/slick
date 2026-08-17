@@ -21,6 +21,7 @@ struct Prompt {
     status: String,
     u_name: String,
     auth_failed: bool,
+    fetch_failed: bool,
 }
 
 const TRANSIENT_TIMESTAMP_COLOR: &str = "8";
@@ -382,6 +383,13 @@ fn append_git_metadata(
             "%F{{{}}}{} ",
             get_env("SLICK_PROMPT_GIT_AUTH_COLOR"),
             get_env("SLICK_PROMPT_GIT_AUTH_SYMBOL")
+        );
+    } else if deserialized.fetch_failed {
+        let _ = write!(
+            prompt,
+            "%F{{{}}}{} ",
+            get_env("SLICK_PROMPT_GIT_OFFLINE_COLOR"),
+            get_env("SLICK_PROMPT_GIT_OFFLINE_SYMBOL")
         );
     }
 }

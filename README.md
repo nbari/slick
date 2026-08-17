@@ -157,7 +157,7 @@ Slick can be customized using environment variables.
 ### Quick Start
 
 ```bash
-# Disable git fetch for faster prompts (removes ~500ms auth check on first run)
+# Disable git fetch for faster prompts (skips the background remote check)
 export SLICK_PROMPT_GIT_FETCH=0
 
 # Custom symbols
@@ -187,6 +187,7 @@ export SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2
 ```bash
 export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5        # Max command time to display (seconds)
 export SLICK_PROMPT_GIT_FETCH=1                # Enable git fetch (1=yes, 0/false/no/off=no)
+export SLICK_PROMPT_GIT_FETCH_TIMEOUT=5        # Seconds to wait for the background git fetch
 export SLICK_PROMPT_NO_GIT_UNAME=0             # Hide git username (1=hide, 0=show)
 export SLICK_PROMPT_NON_BREAKING_SPACE=$' ' # Non-breaking space character (default: U+00A0)
 export SLICK_PROMPT_CURSOR_SHAPE=dynamic       # Block in command/visual mode, bar otherwise
@@ -204,6 +205,7 @@ export SLICK_PROMPT_ROOT_SYMBOL="#"            # Root user symbol
 export SLICK_PROMPT_GIT_REMOTE_AHEAD="⇡"       # Git ahead symbol
 export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"      # Git behind symbol
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"       # Git auth failed symbol
+export SLICK_PROMPT_GIT_OFFLINE_SYMBOL="⚠"     # Git remote unreachable symbol
 export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'  # Default; set to "" to disable
 export SLICK_PROMPT_TOOLBOX_SYMBOL="▣"         # Toolbx marker symbol
 export SLICK_PROMPT_DEVPOD_SYMBOL=$'\uf487'          # DevPod marker symbol
@@ -237,6 +239,7 @@ export SLICK_PROMPT_GIT_STAGED_COLOR=7         # Staged files color
 export SLICK_PROMPT_GIT_REMOTE_COLOR=6         # Remote status color
 export SLICK_PROMPT_GIT_UNAME_COLOR=8          # Git username color
 export SLICK_PROMPT_GIT_AUTH_COLOR=red         # Git auth failed color
+export SLICK_PROMPT_GIT_OFFLINE_COLOR=3        # Git remote unreachable color
 ```
 
 `SLICK_PROMPT_GIT_BRANCH_SYMBOL` is printed immediately before the branch name, for example ` main`. The default is ``. In `zsh`, you can set it safely with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=$'\ue0a0'`, or disable it with `export SLICK_PROMPT_GIT_BRANCH_SYMBOL=""`.
@@ -400,36 +403,39 @@ Configure the Kubernetes marker color:
 export SLICK_PROMPT_K8S_COLOR=7           # Default
 ```
 
-## 🔒 SSH Authentication Detection
+## 🔒 Remote Status Detection
 
-Slick automatically detects when SSH remotes require authentication and displays a lock symbol (🔒).
+Slick automatically detects problems talking to the git remote and shows a marker:
+
+| Marker | Meaning |
+| --- | --- |
+| 🔒 `SLICK_PROMPT_GIT_AUTH_SYMBOL` | The remote rejected your credentials (SSH key/token). |
+| ⚠ `SLICK_PROMPT_GIT_OFFLINE_SYMBOL` | The remote could not be reached at all (no network, DNS failure, host down). |
+
+Only one marker is shown at a time; an authentication failure takes precedence.
 
 **How it works (Streaming Async Prompts):**
-- **Instant display**: Prompt shows immediately with cached auth status (from previous runs)
-- **Async update**: If git fetch is enabled, auth check runs in background with 500ms grace period
-- **Smart cache**: First run takes ~500ms to write cache, subsequent runs are instant with cached status
-- **Cache-based**: Auth status is cached for 5 minutes in `~/.cache/slick/`
+- **Instant display**: Prompt shows immediately with the cached remote status (from previous runs)
+- **Async update**: If git fetch is enabled, the check runs in the background after the prompt is drawn
+- **Cache-based**: Remote status is cached for 5 minutes in `~/.cache/slick/`
 - **Non-blocking**: Uses tokio for true async I/O - no delays, no hanging
-- **Smart timeout**: Git fetch has 5-second timeout to prevent indefinite waits
+- **Smart timeout**: Git fetch gives up after `SLICK_PROMPT_GIT_FETCH_TIMEOUT` seconds (default 5)
 
-**Example:**
+**Three-phase rendering:**
+1. **Phase 1 (0ms)**: Display prompt immediately with all local git info + cached remote status
+2. **Phase 2 (async)**: Git status updates (~10-50ms), then `git fetch` runs in the background
+3. **Phase 3 (async)**: Once the fetch settles, the ahead/behind counts (`⇡`/`⇣`) and the remote
+   status marker are recomputed and the prompt is redrawn — but only if something actually changed
+
+Phase 3 is what makes `⇡`/`⇣` reflect commits that landed on the remote since your last fetch, so
+`cd`-ing into a repository shows whether you need to pull or push without waiting for a second prompt.
+
+Configure the markers:
 ```bash
-# cd into repo with SSH remote requiring auth
-cd my-private-repo
-# First time: ~500ms to check and write cache (shows auth_failed status)
-# Subsequent prompts: instant 🔒 from cache (valid for 5 minutes)
-# After cache expires (5 min): another ~500ms check to refresh cache
-```
-
-**Two-phase rendering:**
-1. **Phase 1 (0ms)**: Display prompt immediately with all git info + cached auth status
-2. **Phase 2 (async)**: Git status updates (~10-50ms), then git fetch checks auth (~500ms)
-3. **Cache write**: Auth status written to cache for next prompt
-
-Configure the lock symbol:
-```bash
-export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"  # Default
-export SLICK_PROMPT_GIT_AUTH_COLOR=red     # Default
+export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"    # Default
+export SLICK_PROMPT_GIT_AUTH_COLOR=red      # Default
+export SLICK_PROMPT_GIT_OFFLINE_SYMBOL="⚠"  # Default
+export SLICK_PROMPT_GIT_OFFLINE_COLOR=3     # Default
 ```
 
 See [TEST_README.md](TEST_README.md#test-auth-lock-detection) for testing instructions.

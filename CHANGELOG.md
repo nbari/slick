@@ -1,3 +1,18 @@
+## 0.25.0 (2026-08-17)
+
+### Added
+- Added a distinct unreachable-remote marker (`SLICK_PROMPT_GIT_OFFLINE_SYMBOL`, default `⚠`, and `SLICK_PROMPT_GIT_OFFLINE_COLOR`, default `3`) so a network/DNS failure is no longer silent and is told apart from an authentication failure.
+- Added `SLICK_PROMPT_GIT_FETCH_TIMEOUT` (default `5` seconds) to bound the background `git fetch`.
+- Added end-to-end regression coverage that drives `slick precmd` against a real local remote and asserts the ahead/behind counts reflect the state after its own fetch.
+
+### Changed
+- Raised the background `git fetch` deadline from a hardcoded 500ms to a configurable 5 seconds. The fetch runs after the prompt is drawn, so this does not affect prompt latency; it restores the pre-0.23.0 budget while keeping the process-group cleanup that prevents orphaned fetch processes.
+- Classified `git fetch` outcomes as ok, authentication failure, or unreachable instead of a single boolean, cached as `0`, `1`, and `2` respectively. Any unrecognised failure is reported as unreachable so a broken remote is never silent.
+- Updated dependencies, including libgit2 1.9.6 and Tokio 1.53.1.
+
+### Fixed
+- Fixed the ahead/behind (`⇡`/`⇣`) counts never updating, so `cd`-ing into a repository did not show that you needed to pull or push. Two defects combined: the counts were computed before the background `git fetch` and never recomputed, and since 0.23.0 the fetch was killed after 500ms, which is shorter than a typical network fetch, so the remote-tracking refs were never updated either. A third render phase now refreshes the counts and the remote status once the fetch settles, and only redraws when something actually changed.
+
 ## 0.24.0 (2026-07-18)
 
 ### Added

@@ -21,6 +21,12 @@ export SLICK_PROMPT_CMD_MAX_EXEC_TIME=5
 # Disable for faster prompts in large repos or slow networks
 export SLICK_PROMPT_GIT_FETCH=1
 
+# Seconds to wait for the background git fetch before giving up
+# Default: 5
+# The fetch runs after the prompt is drawn, so this never delays the prompt; it
+# only bounds how long slick waits before refreshing the ahead/behind counts.
+#export SLICK_PROMPT_GIT_FETCH_TIMEOUT=5
+
 # Disable showing git user.name in prompt (1=disable, 0=show)
 # Default: 0 (show username)
 #export SLICK_PROMPT_NO_GIT_UNAME=0
@@ -74,6 +80,11 @@ export SLICK_PROMPT_GIT_REMOTE_BEHIND="⇣"
 # Git authentication failed symbol
 # Default: 🔒
 export SLICK_PROMPT_GIT_AUTH_SYMBOL="🔒"
+
+# Git remote unreachable symbol (network/DNS error, host down, fetch failed)
+# Default: ⚠ (\u{26a0})
+# Shown instead of the lock when the remote could not be contacted at all.
+#export SLICK_PROMPT_GIT_OFFLINE_SYMBOL="⚠"
 
 # Toolbx marker symbol
 # Default: ▣
@@ -189,6 +200,10 @@ export SLICK_PROMPT_GIT_UNAME_COLOR=8
 # Git authentication failed color
 # Default: red
 export SLICK_PROMPT_GIT_AUTH_COLOR=red
+
+# Git remote unreachable color
+# Default: 3 (yellow)
+#export SLICK_PROMPT_GIT_OFFLINE_COLOR=3
 
 # ==========================================
 # EXAMPLE CONFIGURATIONS

@@ -24,7 +24,10 @@ struct EnvDefaults {
     git_branch_symbol: String,
     git_branch_symbol_color: String,
     git_fetch: String,
+    git_fetch_timeout: String,
     git_main_branch_color: String,
+    git_offline_color: String,
+    git_offline_symbol: String,
     git_remote_color: String,
     git_remote_ahead: String,
     git_remote_behind: String,
@@ -75,9 +78,15 @@ impl EnvDefaults {
             git_branch_symbol_color: env::var("SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR")
                 .unwrap_or_else(|_| "2".into()),
             git_fetch: env::var("SLICK_PROMPT_GIT_FETCH").unwrap_or_else(|_| "1".into()),
+            git_fetch_timeout: env::var("SLICK_PROMPT_GIT_FETCH_TIMEOUT")
+                .unwrap_or_else(|_| "5".into()),
             git_main_branch_color: env::var("SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR")
                 .or_else(|_| env::var("SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR"))
                 .unwrap_or_else(|_| "160".into()),
+            git_offline_color: env::var("SLICK_PROMPT_GIT_OFFLINE_COLOR")
+                .unwrap_or_else(|_| "3".into()),
+            git_offline_symbol: env::var("SLICK_PROMPT_GIT_OFFLINE_SYMBOL")
+                .unwrap_or_else(|_| "\u{26a0}".into()),
             git_remote_color: env::var("SLICK_PROMPT_GIT_REMOTE_COLOR")
                 .unwrap_or_else(|_| "6".into()),
             git_remote_ahead: env::var("SLICK_PROMPT_GIT_REMOTE_AHEAD")
@@ -133,9 +142,12 @@ pub fn get_env(e: &str) -> &str {
         "SLICK_PROMPT_GIT_BRANCH_SYMBOL" => &cache.git_branch_symbol,
         "SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR" => &cache.git_branch_symbol_color,
         "SLICK_PROMPT_GIT_FETCH" => &cache.git_fetch,
+        "SLICK_PROMPT_GIT_FETCH_TIMEOUT" => &cache.git_fetch_timeout,
         "SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR" | "SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR" => {
             &cache.git_main_branch_color
         }
+        "SLICK_PROMPT_GIT_OFFLINE_COLOR" => &cache.git_offline_color,
+        "SLICK_PROMPT_GIT_OFFLINE_SYMBOL" => &cache.git_offline_symbol,
         "SLICK_PROMPT_GIT_REMOTE_COLOR" => &cache.git_remote_color,
         "SLICK_PROMPT_GIT_REMOTE_AHEAD" => &cache.git_remote_ahead,
         "SLICK_PROMPT_GIT_REMOTE_BEHIND" => &cache.git_remote_behind,

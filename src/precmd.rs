@@ -20,7 +20,29 @@ use tokio::{
     time::timeout,
 };
 
-const GIT_FETCH_TIMEOUT: Duration = Duration::from_millis(500);
+const DEFAULT_GIT_FETCH_TIMEOUT_SECS: u64 = 5;
+
+/// Patterns in `git fetch` stderr that mean "the remote rejected our credentials".
+const AUTH_FAILURE_PATTERNS: [&str; 5] = [
+    "permission denied",
+    "authentication failed",
+    "could not read",
+    "repository not found",
+    "access denied",
+];
+
+/// How long to wait for `git fetch` before giving up.
+///
+/// The fetch runs after the prompt is already on screen, so this deadline does not
+/// delay the prompt; it only bounds how long the background process may linger.
+fn git_fetch_timeout() -> Duration {
+    get_env("SLICK_PROMPT_GIT_FETCH_TIMEOUT")
+        .parse::<u64>()
+        .map_or_else(
+            |_| Duration::from_secs(DEFAULT_GIT_FETCH_TIMEOUT_SECS),
+            Duration::from_secs,
+        )
+}
 
 #[derive(Debug, Eq, PartialEq)]
 enum GitFetchOutcome {
@@ -82,19 +104,28 @@ fn git_fetch_command(program: &OsStr, repo_path: &Path) -> Command {
     Command::from(command)
 }
 
-fn write_fetch_auth_cache(cache: &Path, output: &Output) {
-    let auth_failed = if output.status.success() {
-        false
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
-        stderr.contains("permission denied")
-            || stderr.contains("authentication failed")
-            || stderr.contains("could not read")
-            || stderr.contains("repository not found")
-            || stderr.contains("access denied")
-    };
+/// Classifies a finished `git fetch` so the prompt can tell "auth denied" apart
+/// from "could not reach the remote".
+fn classify_fetch_output(output: &Output) -> git::FetchStatus {
+    if output.status.success() {
+        return git::FetchStatus::Ok;
+    }
 
-    let status = if auth_failed { "1" } else { "0" };
+    let stderr = String::from_utf8_lossy(&output.stderr).to_lowercase();
+    if AUTH_FAILURE_PATTERNS
+        .iter()
+        .any(|pattern| stderr.contains(pattern))
+    {
+        git::FetchStatus::AuthFailed
+    } else {
+        // Any other failure (DNS, refused connection, unreachable host, dead
+        // remote) means we could not talk to the remote at all.
+        git::FetchStatus::Unreachable
+    }
+}
+
+fn write_fetch_auth_cache(cache: &Path, output: &Output) {
+    let status = classify_fetch_output(output).as_cache_value();
     let _ = fs::write(cache, format!("{}:{status}", git::unix_timestamp()));
 }
 
@@ -155,6 +186,34 @@ async fn join_git_fetch(handle: JoinHandle<GitFetchOutcome>) -> Option<GitFetchO
     handle.await.ok()
 }
 
+/// Re-reads the post-fetch git state into `prompt`.
+///
+/// `git fetch` moves the remote-tracking refs, so the ahead/behind counts gathered
+/// before it ran can be stale. Returns `true` when something changed and the prompt
+/// is worth re-emitting.
+fn refresh_after_fetch(repo_path: &Path, prompt: &mut git::Prompt) -> bool {
+    let Ok(repo) = Repository::open(repo_path) else {
+        return false;
+    };
+
+    let remote = git::remote_markers(&repo);
+    let fetch_status = git::read_fetch_status(&repo);
+    let auth_failed = fetch_status == git::FetchStatus::AuthFailed;
+    let fetch_failed = fetch_status == git::FetchStatus::Unreachable;
+
+    if remote == prompt.remote
+        && auth_failed == prompt.auth_failed
+        && fetch_failed == prompt.fetch_failed
+    {
+        return false;
+    }
+
+    prompt.remote = remote;
+    prompt.auth_failed = auth_failed;
+    prompt.fetch_failed = fetch_failed;
+    true
+}
+
 pub async fn render() {
     // Check if we're in a git repository
     let repo_result = env::current_dir()
@@ -175,6 +234,7 @@ pub async fn render() {
 
         // Phase 2a: Spawn blocking task for slow git status (CPU-bound)
         let repo_path = repo.path().to_path_buf();
+        let repo_for_refresh = repo_path.clone();
         let status_handle = spawn_blocking(move || -> Option<String> {
             // TEST: Simulate slow git status (for testing non-blocking behavior)
             // Set SLICK_TEST_DELAY=N to add N seconds delay (e.g., SLICK_TEST_DELAY=1)
@@ -216,7 +276,7 @@ pub async fn render() {
                 }
 
                 let command = git_fetch_command(OsStr::new("git"), &fetch_path);
-                run_git_fetch(command, cache_path.as_deref(), GIT_FETCH_TIMEOUT).await
+                run_git_fetch(command, cache_path.as_deref(), git_fetch_timeout()).await
             }))
         };
 
@@ -229,9 +289,17 @@ pub async fn render() {
             }
         }
 
+        // Phase 3: the fetch above may have moved the remote refs, so the ahead/behind
+        // counts emitted in phase 1 can be stale. Recompute once the fetch settles and
+        // re-emit only when something actually changed, to avoid a pointless redraw.
         // The deadline is enforced inside the task so timeout cleanup can kill and reap the child.
-        if let Some(handle) = fetch_handle {
-            let _ = join_git_fetch(handle).await;
+        if let Some(handle) = fetch_handle
+            && join_git_fetch(handle).await == Some(GitFetchOutcome::Completed)
+            && refresh_after_fetch(&repo_for_refresh, &mut prompt)
+            && let Ok(serialized) = serde_json::to_string(&prompt)
+        {
+            let _ = writeln!(io::stdout(), "{serialized}");
+            let _ = io::stdout().flush();
         }
     } else {
         // Outside git repo: Output empty prompt data (ensures handler fires for elapsed time)
@@ -246,14 +314,17 @@ pub async fn render() {
 #[cfg(all(test, unix))]
 mod tests {
     use super::{
-        GIT_FETCH_TIMEOUT, GitFetchOutcome, git_fetch_command, join_git_fetch, run_git_fetch,
+        DEFAULT_GIT_FETCH_TIMEOUT_SECS, GitFetchOutcome, classify_fetch_output, git_fetch_command,
+        git_fetch_timeout, join_git_fetch, run_git_fetch,
     };
+    use crate::git::FetchStatus;
     use std::{
         error::Error,
         fs, io,
         os::unix::fs::PermissionsExt,
+        os::unix::process::ExitStatusExt,
         path::Path,
-        process::Stdio,
+        process::{Output, Stdio},
         time::{Duration, Instant},
     };
     use tokio::{process::Command, time::sleep};
@@ -359,7 +430,7 @@ mod tests {
 
         let task_cache_path = cache_path.clone();
         let fetch_handle = tokio::spawn(async move {
-            run_git_fetch(command, Some(&task_cache_path), GIT_FETCH_TIMEOUT).await
+            run_git_fetch(command, Some(&task_cache_path), Duration::from_millis(500)).await
         });
         let (outcome, parent_pid, child_pid) = tokio::join!(
             join_git_fetch(fetch_handle),
@@ -414,5 +485,89 @@ mod tests {
         assert_eq!(outcome, GitFetchOutcome::SpawnFailed);
         assert_eq!(fs::read_to_string(cache_path)?, "123:1");
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_unreachable_remote_is_cached_distinctly_from_auth_failure()
+    -> Result<(), Box<dyn Error>> {
+        let test_dir = test_directory("slick-fetch-unreachable-")?;
+        let worktree = test_dir.path().join("worktree");
+        fs::create_dir(&worktree)?;
+        let cache_path = test_dir.path().join("auth-cache");
+
+        let offline_git = test_dir.path().join("offline-git");
+        write_executable(
+            &offline_git,
+            "#!/bin/sh\n\
+             echo 'fatal: unable to access: Could not resolve host: github.com' >&2\n\
+             exit 128\n",
+        )?;
+        let outcome = run_git_fetch(
+            git_fetch_command(offline_git.as_os_str(), &worktree),
+            Some(&cache_path),
+            Duration::from_secs(2),
+        )
+        .await;
+        assert_eq!(outcome, GitFetchOutcome::Completed);
+        assert!(fs::read_to_string(&cache_path)?.ends_with(":2"));
+
+        let denied_git = test_dir.path().join("denied-git");
+        write_executable(
+            &denied_git,
+            "#!/bin/sh\n\
+             echo 'git@github.com: Permission denied (publickey).' >&2\n\
+             exit 128\n",
+        )?;
+        let outcome = run_git_fetch(
+            git_fetch_command(denied_git.as_os_str(), &worktree),
+            Some(&cache_path),
+            Duration::from_secs(2),
+        )
+        .await;
+        assert_eq!(outcome, GitFetchOutcome::Completed);
+        assert!(fs::read_to_string(&cache_path)?.ends_with(":1"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_classify_fetch_output_maps_stderr_to_status() {
+        let make = |code: i32, stderr: &str| Output {
+            status: std::process::ExitStatus::from_raw(code << 8),
+            stdout: Vec::new(),
+            stderr: stderr.as_bytes().to_vec(),
+        };
+
+        assert_eq!(classify_fetch_output(&make(0, "")), FetchStatus::Ok);
+        assert_eq!(
+            classify_fetch_output(&make(128, "Permission denied (publickey).")),
+            FetchStatus::AuthFailed
+        );
+        assert_eq!(
+            classify_fetch_output(&make(128, "Authentication failed for 'https://...'")),
+            FetchStatus::AuthFailed
+        );
+        assert_eq!(
+            classify_fetch_output(&make(128, "Could not resolve host: github.com")),
+            FetchStatus::Unreachable
+        );
+        assert_eq!(
+            classify_fetch_output(&make(128, "Connection refused")),
+            FetchStatus::Unreachable
+        );
+        // Any unrecognised failure still tells the user something went wrong.
+        assert_eq!(
+            classify_fetch_output(&make(1, "some unexpected failure")),
+            FetchStatus::Unreachable
+        );
+    }
+
+    #[test]
+    fn test_git_fetch_timeout_defaults_to_five_seconds() {
+        // SLICK_PROMPT_GIT_FETCH_TIMEOUT is unset in the test environment, so the
+        // cached default applies.
+        assert_eq!(
+            git_fetch_timeout(),
+            Duration::from_secs(DEFAULT_GIT_FETCH_TIMEOUT_SECS)
+        );
     }
 }

@@ -32,8 +32,11 @@ The default values are:
     SLICK_PROMPT_GIT_BRANCH_SYMBOL= (set to "" to disable)
     SLICK_PROMPT_GIT_BRANCH_SYMBOL_COLOR=2
     SLICK_PROMPT_GIT_FETCH=1 (if set to 0 disables git fetch)
+    SLICK_PROMPT_GIT_FETCH_TIMEOUT=5 (seconds to wait for the background git fetch)
     SLICK_PROMPT_GIT_MAIN_BRANCH_COLOR=160
     SLICK_PROMPT_GIT_MASTER_BRANCH_COLOR=160 (deprecated fallback)
+    SLICK_PROMPT_GIT_OFFLINE_COLOR=3
+    SLICK_PROMPT_GIT_OFFLINE_SYMBOL=⚠ (shown when the remote cannot be reached)
     SLICK_PROMPT_GIT_REMOTE_COLOR=6
     SLICK_PROMPT_GIT_REMOTE_AHEAD=⇡
     SLICK_PROMPT_GIT_REMOTE_BEHIND=⇣

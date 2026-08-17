@@ -96,6 +96,46 @@ pub struct Prompt {
     pub u_name: String,
     /// True if the last `git fetch` resulted in an authentication failure.
     pub auth_failed: bool,
+    /// True if the last `git fetch` failed to reach the remote (network/DNS/host error).
+    #[serde(default)]
+    pub fetch_failed: bool,
+}
+
+/// Outcome of the most recent `git fetch`, as persisted in the cache file.
+#[derive(Debug, Default, Eq, PartialEq, Clone, Copy)]
+pub enum FetchStatus {
+    /// The remote was reachable and authentication succeeded.
+    #[default]
+    Ok,
+    /// The remote rejected our credentials.
+    AuthFailed,
+    /// The remote could not be reached at all (DNS, network, host or generic failure).
+    Unreachable,
+}
+
+impl FetchStatus {
+    /// The value persisted in the cache file for this status.
+    #[must_use]
+    pub const fn as_cache_value(self) -> &'static str {
+        match self {
+            Self::Ok => "0",
+            Self::AuthFailed => "1",
+            Self::Unreachable => "2",
+        }
+    }
+
+    /// Parses a status previously written by [`Self::as_cache_value`].
+    ///
+    /// Unknown values are treated as [`Self::Ok`] so a corrupt cache never
+    /// surfaces a phantom error in the prompt.
+    #[must_use]
+    pub fn from_cache_value(value: &str) -> Self {
+        match value.trim() {
+            "1" => Self::AuthFailed,
+            "2" => Self::Unreachable,
+            _ => Self::Ok,
+        }
+    }
 }
 
 /// Builds a `Prompt` struct containing fast/synchronous local Git information.
@@ -150,23 +190,13 @@ pub fn build_prompt_fast(repo: &Repository) -> Prompt {
             .unwrap_or_else(|_| String::new());
     }
 
-    // Check for cached auth status (synchronous, fast - just reads cache file)
-    prompt.auth_failed = read_auth_status(repo);
+    // Check for cached fetch status (synchronous, fast - just reads cache file)
+    let fetch_status = read_fetch_status(repo);
+    prompt.auth_failed = fetch_status == FetchStatus::AuthFailed;
+    prompt.fetch_failed = fetch_status == FetchStatus::Unreachable;
 
     // git remote ahead/behind (fast - local graph traversal)
-    let (ahead, behind) = is_ahead_behind_remote(repo);
-    if behind > 0 {
-        let mut s = String::with_capacity(8);
-        // Writing to String never fails - ignore result
-        let _ = write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_BEHIND"), behind);
-        prompt.remote.push(s);
-    }
-    if ahead > 0 {
-        let mut s = String::with_capacity(8);
-        // Writing to String never fails - ignore result
-        let _ = write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_AHEAD"), ahead);
-        prompt.remote.push(s);
-    }
+    prompt.remote = remote_markers(repo);
 
     // git action (instant - file existence checks)
     if let Some(action) = get_action(repo) {
@@ -179,6 +209,40 @@ pub fn build_prompt_fast(repo: &Repository) -> Prompt {
     }
 
     prompt
+}
+
+/// Builds the ahead/behind markers (e.g. `["⇣2", "⇡1"]`) for the current branch.
+///
+/// The counts come from a local graph traversal, so they only reflect the remote
+/// refs currently on disk. Call this again after a `git fetch` to pick up newly
+/// fetched commits.
+///
+/// # Arguments
+///
+/// * `repo` - A reference to the `git2::Repository` object.
+///
+/// # Returns
+///
+/// A vector with a behind marker and/or an ahead marker, empty when in sync.
+#[must_use]
+pub fn remote_markers(repo: &Repository) -> Vec<String> {
+    let (ahead, behind) = is_ahead_behind_remote(repo);
+    let mut markers = Vec::with_capacity(2);
+
+    if behind > 0 {
+        let mut s = String::with_capacity(8);
+        // Writing to String never fails - ignore result
+        let _ = write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_BEHIND"), behind);
+        markers.push(s);
+    }
+    if ahead > 0 {
+        let mut s = String::with_capacity(8);
+        // Writing to String never fails - ignore result
+        let _ = write!(s, "{}{}", get_env("SLICK_PROMPT_GIT_REMOTE_AHEAD"), ahead);
+        markers.push(s);
+    }
+
+    markers
 }
 
 /// Returns a string summarizing the git status of the repository.
@@ -265,10 +329,36 @@ pub fn get_auth_cache_path(repo: &Repository) -> Option<PathBuf> {
     Some(cache_path.join(format!("auth_{hash:x}")))
 }
 
-/// Reads the cached Git authentication status for a given repository.
+/// Reads the cached Git fetch status for a given repository.
 ///
-/// The cache file stores a timestamp and a status (0 for success, 1 for failure).
+/// The cache file stores a timestamp and a status (see [`FetchStatus::as_cache_value`]).
 /// The cache is considered valid for 5 minutes.
+///
+/// # Arguments
+///
+/// * `repo` - A reference to the `git2::Repository` object.
+///
+/// # Returns
+///
+/// The cached [`FetchStatus`], or [`FetchStatus::Ok`] when there is no fresh cache entry.
+#[must_use]
+pub fn read_fetch_status(repo: &Repository) -> FetchStatus {
+    if let Some(cache_path) = get_auth_cache_path(repo)
+        && let Ok(content) = fs::read_to_string(&cache_path)
+        && let Some((ts_str, status)) = content.split_once(':')
+        && let Ok(cached_time) = ts_str.parse::<u64>()
+    {
+        let now = unix_timestamp();
+
+        // Cache valid for 5 minutes
+        if now.saturating_sub(cached_time) < 300 {
+            return FetchStatus::from_cache_value(status);
+        }
+    }
+    FetchStatus::Ok
+}
+
+/// Reads the cached Git authentication status for a given repository.
 ///
 /// # Arguments
 ///
@@ -279,19 +369,7 @@ pub fn get_auth_cache_path(repo: &Repository) -> Option<PathBuf> {
 /// `true` if authentication previously failed and the cache is still fresh, `false` otherwise.
 #[must_use]
 pub fn read_auth_status(repo: &Repository) -> bool {
-    if let Some(cache_path) = get_auth_cache_path(repo)
-        && let Ok(content) = fs::read_to_string(&cache_path)
-        && let Some((ts_str, status)) = content.split_once(':')
-        && let Ok(cached_time) = ts_str.parse::<u64>()
-    {
-        let now = unix_timestamp();
-
-        // Cache valid for 5 minutes
-        if now.saturating_sub(cached_time) < 300 {
-            return status.trim() == "1";
-        }
-    }
-    false
+    read_fetch_status(repo) == FetchStatus::AuthFailed
 }
 
 /// Determines the current Git action (e.g., rebase, merge, cherry-pick) by checking
