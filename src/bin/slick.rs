@@ -1,7 +1,7 @@
 use clap::{Arg, ArgAction, Command};
 use slick::{precmd, prompt};
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let matches = Command::new("slick")
         .version(env!("CARGO_PKG_VERSION"))

@@ -484,9 +484,7 @@ pub fn is_staged(repo: &Repository) -> Result<bool, Error> {
         Err(error) => return Err(error),
     };
     let diff = repo.diff_tree_to_index(tree.as_ref(), None, Some(&mut opts))?;
-    let stats = diff.stats()?;
-    if stats.files_changed() > 0 || stats.insertions() > 0 || stats.deletions() > 0 {
-        return Ok(true);
-    }
-    Ok(false)
+    // Only the presence of a staged change matters, so count deltas instead of
+    // calling `stats()`, which loads and diffs blob contents to tally lines.
+    Ok(diff.deltas().len() > 0)
 }

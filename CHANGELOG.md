@@ -1,3 +1,9 @@
+## 0.26.0 (2026-08-17)
+
+### Performance
+- Switched to a single-threaded Tokio runtime. The multi-threaded runtime eagerly spawned one worker thread per CPU core on every prompt, but the prompt has no CPU-parallel work: the blocking `git status` runs on Tokio's separate blocking pool and the background `git fetch` only waits on a child process. Thread creation therefore cost more than it saved. Prompt rendering is about 60% faster, the first `precmd` phase about 40% faster, and dropping the now-unused `rt-multi-thread` feature shrinks the binary by about 70KB.
+- Replaced the staged-changes check's full diff statistics with a delta count. `Diff::stats` loaded and diffed blob contents to tally insertions and deletions, then the result was only compared against zero; only the presence of a staged change is needed. In a repository with 40 large staged files this cut the first `precmd` phase from about 16ms to about 1.3ms.
+
 ## 0.25.0 (2026-08-17)
 
 ### Added
